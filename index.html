@@ -1,0 +1,2007 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PharmaGuard — AI Pharmacogenomic Risk Prediction</title>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+<style>
+:root {
+  --bg-deep: #050510;
+  --bg-dark: #0a0a1a;
+  --bg-card: rgba(10,20,40,0.85);
+  --blue: #00d4ff;
+  --green: #00ff88;
+  --purple: #8b5cf6;
+  --pink: #f472b6;
+  --orange: #f97316;
+  --red: #ef4444;
+  --yellow: #fbbf24;
+  --text: #e2e8f0;
+  --text-dim: #94a3b8;
+  --border: rgba(0,212,255,0.2);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  font-family:'Segoe UI',system-ui,sans-serif;
+  background:var(--bg-deep);
+  color:var(--text);
+  overflow-x:hidden;
+  min-height:100vh;
+}
+/* ── PARTICLES CANVAS ── */
+#particleCanvas{
+  position:fixed;top:0;left:0;width:100%;height:100%;
+  pointer-events:none;z-index:0;opacity:0.4;
+}
+/* ── NAV ── */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:1rem 2rem;
+  background:rgba(5,5,16,0.8);
+  backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+}
+.nav-logo{
+  font-size:1.5rem;font-weight:800;letter-spacing:2px;
+  background:linear-gradient(90deg,var(--blue),var(--green));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.nav-links{display:flex;gap:2rem;}
+.nav-links a{
+  color:var(--text-dim);text-decoration:none;font-size:0.9rem;
+  letter-spacing:1px;text-transform:uppercase;
+  transition:color .3s;
+}
+.nav-links a:hover{color:var(--blue);}
+/* ── HERO ── */
+#hero{
+  position:relative;min-height:100vh;
+  display:flex;align-items:center;justify-content:center;
+  text-align:center;padding:6rem 2rem 4rem;
+  overflow:hidden;
+}
+.hero-content{position:relative;z-index:2;max-width:800px;}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:0.5rem;
+  padding:0.4rem 1.2rem;
+  border:1px solid var(--purple);
+  border-radius:999px;
+  font-size:0.8rem;letter-spacing:2px;text-transform:uppercase;
+  color:var(--purple);margin-bottom:1.5rem;
+  animation:pulse-border 2s ease-in-out infinite;
+}
+@keyframes pulse-border{
+  0%,100%{box-shadow:0 0 0 0 rgba(139,92,246,0.4);}
+  50%{box-shadow:0 0 0 8px rgba(139,92,246,0);}
+}
+.hero-title{
+  font-size:clamp(3rem,8vw,6rem);
+  font-weight:900;line-height:1;letter-spacing:-2px;
+  background:linear-gradient(135deg,#fff 0%,var(--blue) 40%,var(--green) 80%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  filter:drop-shadow(0 0 40px rgba(0,212,255,0.3));
+  animation:glow-title 3s ease-in-out infinite;
+  margin-bottom:1rem;
+}
+@keyframes glow-title{
+  0%,100%{filter:drop-shadow(0 0 40px rgba(0,212,255,0.3));}
+  50%{filter:drop-shadow(0 0 80px rgba(0,212,255,0.6));}
+}
+.hero-subtitle{
+  font-size:1.4rem;font-weight:300;color:var(--blue);
+  letter-spacing:3px;text-transform:uppercase;margin-bottom:1rem;
+}
+.hero-tagline{
+  font-size:1.1rem;color:var(--text-dim);max-width:600px;margin:0 auto 2.5rem;
+  line-height:1.7;
+}
+.btn-primary{
+  display:inline-flex;align-items:center;gap:0.75rem;
+  padding:1rem 2.5rem;
+  background:linear-gradient(135deg,var(--blue),var(--purple));
+  color:#fff;border:none;border-radius:8px;
+  font-size:1rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+  cursor:pointer;text-decoration:none;
+  transition:all .3s;
+  box-shadow:0 0 30px rgba(0,212,255,0.4);
+  position:relative;overflow:hidden;
+}
+.btn-primary::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,var(--green),var(--blue));
+  opacity:0;transition:opacity .3s;
+}
+.btn-primary:hover::before{opacity:1;}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 0 50px rgba(0,212,255,0.6);}
+.btn-primary span{position:relative;z-index:1;}
+
+/* DNA Helix Canvas */
+#dnaCanvas{
+  position:absolute;right:5%;top:50%;transform:translateY(-50%);
+  opacity:0.7;
+}
+/* ── STATS BAR ── */
+.stats-bar{
+  position:relative;z-index:2;
+  display:grid;grid-template-columns:repeat(4,1fr);gap:0;
+  border-top:1px solid var(--border);
+  border-bottom:1px solid var(--border);
+  background:rgba(0,212,255,0.03);
+}
+.stat-item{
+  padding:1.5rem;text-align:center;
+  border-right:1px solid var(--border);
+  position:relative;
+}
+.stat-item:last-child{border-right:none;}
+.stat-num{
+  font-size:1.8rem;font-weight:900;
+  background:linear-gradient(90deg,var(--blue),var(--green));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.stat-label{font-size:0.8rem;color:var(--text-dim);letter-spacing:1px;margin-top:0.3rem;}
+
+/* ── SECTION WRAPPER ── */
+.section{position:relative;z-index:2;padding:5rem 2rem;}
+.container{max-width:1100px;margin:0 auto;}
+.section-title{
+  text-align:center;margin-bottom:3rem;
+}
+.section-title h2{
+  font-size:2.5rem;font-weight:800;
+  background:linear-gradient(90deg,var(--blue),var(--green));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  margin-bottom:0.5rem;
+}
+.section-title p{color:var(--text-dim);font-size:1rem;}
+
+/* ── ANALYSIS TOOL ── */
+#tool{background:rgba(0,10,30,0.5);}
+.tool-grid{display:grid;grid-template-columns:1fr 1fr;gap:2rem;}
+@media(max-width:768px){.tool-grid{grid-template-columns:1fr;}}
+
+/* Upload Zone */
+.upload-zone{
+  border:2px dashed var(--blue);
+  border-radius:16px;
+  padding:3rem 2rem;
+  text-align:center;
+  cursor:pointer;
+  position:relative;
+  overflow:hidden;
+  transition:all .3s;
+  background:rgba(0,212,255,0.03);
+  animation:border-pulse 3s ease-in-out infinite;
+}
+@keyframes border-pulse{
+  0%,100%{border-color:rgba(0,212,255,0.5);box-shadow:0 0 20px rgba(0,212,255,0.1);}
+  50%{border-color:rgba(0,212,255,1);box-shadow:0 0 40px rgba(0,212,255,0.3);}
+}
+.upload-zone.drag-over{
+  border-color:var(--green);
+  background:rgba(0,255,136,0.05);
+  box-shadow:0 0 60px rgba(0,255,136,0.2);
+}
+.upload-zone.file-loaded{
+  border-color:var(--green);
+  animation:none;
+  border-style:solid;
+  box-shadow:0 0 30px rgba(0,255,136,0.2);
+}
+.upload-icon{font-size:3rem;margin-bottom:1rem;}
+.upload-title{font-size:1.1rem;font-weight:600;margin-bottom:0.5rem;}
+.upload-sub{font-size:0.85rem;color:var(--text-dim);}
+.upload-file-info{
+  margin-top:1rem;padding:0.75rem 1rem;
+  background:rgba(0,255,136,0.1);border:1px solid rgba(0,255,136,0.3);
+  border-radius:8px;font-size:0.85rem;color:var(--green);display:none;
+}
+#vcfFileInput{display:none;}
+
+/* Drug Panel */
+.drug-panel{display:flex;flex-direction:column;gap:1.5rem;}
+.panel-label{font-size:0.85rem;letter-spacing:2px;text-transform:uppercase;color:var(--blue);margin-bottom:0.5rem;}
+
+.drug-input{
+  width:100%;padding:0.85rem 1.2rem;
+  background:rgba(0,212,255,0.05);
+  border:1px solid var(--border);
+  border-radius:8px;color:var(--text);font-size:0.95rem;
+  transition:border-color .3s,box-shadow .3s;outline:none;
+}
+.drug-input:focus{
+  border-color:var(--blue);
+  box-shadow:0 0 20px rgba(0,212,255,0.15);
+}
+
+.drug-chips{display:flex;flex-wrap:wrap;gap:0.5rem;margin-top:0.5rem;}
+.drug-chip{
+  padding:0.35rem 0.85rem;
+  border-radius:999px;font-size:0.8rem;
+  border:1px solid var(--border);color:var(--text-dim);
+  cursor:pointer;transition:all .25s;
+}
+.drug-chip:hover,.drug-chip.active{
+  border-color:var(--blue);color:var(--blue);
+  background:rgba(0,212,255,0.1);
+  box-shadow:0 0 12px rgba(0,212,255,0.2);
+}
+.drug-chip.active{font-weight:700;}
+
+.btn-analyze{
+  width:100%;padding:1.2rem;
+  background:linear-gradient(135deg,var(--blue),var(--purple),var(--green));
+  background-size:200% 200%;
+  animation:gradient-shift 3s ease infinite;
+  border:none;border-radius:12px;
+  color:#fff;font-size:1.1rem;font-weight:800;letter-spacing:3px;
+  text-transform:uppercase;cursor:pointer;
+  transition:transform .3s,box-shadow .3s;
+  box-shadow:0 0 40px rgba(0,212,255,0.3);
+}
+@keyframes gradient-shift{
+  0%{background-position:0% 50%;}
+  50%{background-position:100% 50%;}
+  100%{background-position:0% 50%;}
+}
+.btn-analyze:hover{transform:translateY(-3px);box-shadow:0 0 60px rgba(0,212,255,0.5);}
+.btn-analyze:disabled{opacity:0.5;cursor:not-allowed;animation:none;}
+
+/* VCF Sample */
+.vcf-sample{
+  margin-top:1.5rem;
+  background:rgba(0,0,0,0.4);border:1px solid var(--border);
+  border-radius:8px;padding:1rem;
+  font-family:'Courier New',monospace;font-size:0.72rem;
+  color:#64748b;line-height:1.6;overflow-x:auto;
+  max-height:160px;overflow-y:auto;
+}
+.vcf-sample .vcf-header{color:#8b5cf6;}
+.vcf-sample .vcf-meta{color:#475569;}
+.vcf-sample .vcf-data{color:#00d4ff;}
+
+/* ── LOADING OVERLAY ── */
+#loadingOverlay{
+  display:none;position:fixed;inset:0;z-index:200;
+  background:rgba(5,5,16,0.95);
+  flex-direction:column;align-items:center;justify-content:center;gap:2rem;
+  backdrop-filter:blur(10px);
+}
+#loadingOverlay.active{display:flex;}
+.dna-spinner{
+  width:80px;height:80px;
+  border:3px solid rgba(0,212,255,0.2);
+  border-top-color:var(--blue);
+  border-radius:50%;
+  animation:spin 1s linear infinite;
+  position:relative;
+}
+.dna-spinner::after{
+  content:'';position:absolute;inset:8px;
+  border:3px solid rgba(0,255,136,0.2);
+  border-bottom-color:var(--green);
+  border-radius:50%;
+  animation:spin 0.7s linear infinite reverse;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-text{color:var(--blue);letter-spacing:3px;font-size:1rem;text-transform:uppercase;}
+.loading-steps{display:flex;flex-direction:column;gap:0.5rem;min-width:280px;}
+.loading-step{
+  display:flex;align-items:center;gap:0.75rem;
+  font-size:0.85rem;color:var(--text-dim);
+  padding:0.5rem 0.75rem;border-radius:6px;
+  transition:all .3s;
+}
+.loading-step.active{color:var(--green);background:rgba(0,255,136,0.08);}
+.loading-step.done{color:var(--text-dim);}
+.step-dot{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--text-dim);flex-shrink:0;
+}
+.loading-step.active .step-dot{background:var(--green);box-shadow:0 0 10px var(--green);}
+.loading-step.done .step-dot{background:var(--blue);}
+
+/* ── RESULTS SECTION ── */
+#results{display:none;position:relative;z-index:2;padding:4rem 2rem;}
+#results.visible{display:block;}
+
+.results-header{
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:1rem;margin-bottom:2rem;
+  padding-bottom:1.5rem;
+  border-bottom:1px solid var(--border);
+}
+.patient-info{
+  font-family:'Courier New',monospace;
+}
+.patient-id{font-size:1.4rem;font-weight:700;color:var(--blue);}
+.patient-ts{font-size:0.8rem;color:var(--text-dim);margin-top:0.2rem;}
+
+.results-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem;}
+@media(max-width:768px){.results-grid{grid-template-columns:1fr;}}
+
+/* CARD */
+.card{
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:16px;padding:1.5rem;
+  backdrop-filter:blur(20px);
+  position:relative;overflow:hidden;
+  transition:transform .3s,box-shadow .3s;
+}
+.card::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(0,212,255,0.03),transparent);
+  pointer-events:none;
+}
+.card:hover{transform:translateY(-2px);}
+.card-label{
+  font-size:0.75rem;letter-spacing:2px;text-transform:uppercase;
+  color:var(--text-dim);margin-bottom:1rem;
+}
+
+/* Risk Card */
+.risk-card{grid-column:span 2;}
+@media(max-width:768px){.risk-card{grid-column:span 1;}}
+.risk-display{display:flex;align-items:center;gap:2rem;flex-wrap:wrap;}
+.risk-badge{
+  display:flex;flex-direction:column;align-items:center;
+  padding:1.5rem 2.5rem;border-radius:12px;
+  font-weight:900;font-size:2rem;letter-spacing:2px;
+  text-transform:uppercase;min-width:200px;
+  position:relative;overflow:hidden;
+}
+.risk-badge.safe{background:rgba(0,255,136,0.1);border:2px solid var(--green);color:var(--green);box-shadow:0 0 30px rgba(0,255,136,0.2);}
+.risk-badge.adjust{background:rgba(251,191,36,0.1);border:2px solid var(--yellow);color:var(--yellow);box-shadow:0 0 30px rgba(251,191,36,0.2);}
+.risk-badge.toxic{background:rgba(239,68,68,0.1);border:2px solid var(--red);color:var(--red);box-shadow:0 0 30px rgba(239,68,68,0.3);animation:pulse-danger 2s ease-in-out infinite;}
+.risk-badge.ineffective{background:rgba(249,115,22,0.1);border:2px solid var(--orange);color:var(--orange);box-shadow:0 0 30px rgba(249,115,22,0.2);}
+.risk-badge.unknown{background:rgba(148,163,184,0.1);border:2px solid #64748b;color:#94a3b8;}
+@keyframes pulse-danger{
+  0%,100%{box-shadow:0 0 30px rgba(239,68,68,0.3);}
+  50%{box-shadow:0 0 60px rgba(239,68,68,0.6);}
+}
+.risk-icon{font-size:2.5rem;margin-bottom:0.5rem;}
+.risk-label-text{font-size:1.1rem;}
+
+.risk-details{flex:1;display:flex;flex-direction:column;gap:1.25rem;}
+.confidence-row{display:flex;align-items:center;gap:1.5rem;}
+.confidence-circle{
+  width:90px;height:90px;flex-shrink:0;
+  position:relative;
+}
+.confidence-circle svg{transform:rotate(-90deg);}
+.confidence-circle .track{fill:none;stroke:rgba(255,255,255,0.1);stroke-width:8;}
+.confidence-circle .fill{
+  fill:none;stroke:var(--blue);stroke-width:8;
+  stroke-linecap:round;
+  stroke-dasharray:226;stroke-dashoffset:226;
+  transition:stroke-dashoffset 1.5s cubic-bezier(.4,0,.2,1);
+}
+.confidence-pct{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:1rem;font-weight:800;color:var(--blue);
+}
+.confidence-label{font-size:0.85rem;color:var(--text-dim);}
+.severity-row{display:flex;align-items:center;gap:0.75rem;}
+.severity-badge{
+  display:inline-block;padding:0.3rem 0.9rem;
+  border-radius:999px;font-size:0.8rem;font-weight:700;
+  letter-spacing:1px;text-transform:uppercase;
+}
+.sev-none{background:rgba(0,255,136,0.15);color:var(--green);}
+.sev-low{background:rgba(0,212,255,0.15);color:var(--blue);}
+.sev-moderate{background:rgba(251,191,36,0.15);color:var(--yellow);}
+.sev-high{background:rgba(249,115,22,0.15);color:var(--orange);}
+.sev-critical{background:rgba(239,68,68,0.15);color:var(--red);animation:pulse-sev 1.5s ease-in-out infinite;}
+@keyframes pulse-sev{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0.4);}50%{box-shadow:0 0 0 8px rgba(239,68,68,0);}}
+
+/* Variants Table */
+.variants-table{width:100%;border-collapse:collapse;font-size:0.85rem;font-family:'Courier New',monospace;}
+.variants-table th{
+  padding:0.6rem 0.8rem;text-align:left;
+  border-bottom:1px solid var(--border);
+  color:var(--blue);font-size:0.7rem;letter-spacing:2px;text-transform:uppercase;
+}
+.variants-table td{padding:0.6rem 0.8rem;border-bottom:1px solid rgba(255,255,255,0.04);}
+.variants-table tr:last-child td{border-bottom:none;}
+.rsid{color:var(--purple);}
+.star-allele{color:var(--green);}
+
+/* Phenotype badge */
+.phenotype-badge{
+  display:inline-block;padding:0.2rem 0.6rem;border-radius:4px;
+  font-size:0.75rem;font-weight:700;
+  background:rgba(139,92,246,0.15);color:var(--purple);
+  border:1px solid rgba(139,92,246,0.3);
+}
+
+/* Recommendation */
+.rec-card{grid-column:span 2;}
+@media(max-width:768px){.rec-card{grid-column:span 1;}}
+.rec-action{
+  font-size:1.1rem;font-weight:700;margin-bottom:1rem;
+  padding:1rem 1.5rem;border-radius:8px;
+  background:rgba(0,212,255,0.05);border-left:4px solid var(--blue);
+}
+.rec-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;}
+@media(max-width:640px){.rec-grid{grid-template-columns:1fr;}}
+.rec-item{
+  padding:1rem;border-radius:8px;
+  background:rgba(255,255,255,0.03);border:1px solid var(--border);
+}
+.rec-item-label{font-size:0.7rem;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:0.4rem;}
+.rec-item-val{font-size:0.9rem;color:var(--text);}
+.alt-drug{
+  display:inline-block;margin:0.2rem;padding:0.2rem 0.6rem;
+  background:rgba(0,255,136,0.1);border:1px solid rgba(0,255,136,0.3);
+  border-radius:4px;font-size:0.8rem;color:var(--green);
+}
+.urgency-badge{
+  display:inline-block;padding:0.2rem 0.7rem;border-radius:999px;font-size:0.8rem;font-weight:700;
+}
+.urg-immediate{background:rgba(239,68,68,0.15);color:var(--red);}
+.urg-routine{background:rgba(0,255,136,0.15);color:var(--green);}
+.urg-monitoring{background:rgba(251,191,36,0.15);color:var(--yellow);}
+
+/* LLM Explanation */
+.llm-card{grid-column:span 2;}
+@media(max-width:768px){.llm-card{grid-column:span 1;}}
+.llm-section{margin-bottom:1.25rem;}
+.llm-section-title{
+  font-size:0.75rem;color:var(--blue);letter-spacing:2px;text-transform:uppercase;
+  margin-bottom:0.5rem;display:flex;align-items:center;gap:0.5rem;
+}
+.llm-section-title::before{content:'▶';font-size:0.6rem;}
+.llm-text{
+  font-size:0.9rem;line-height:1.7;color:var(--text);
+  padding:1rem;border-radius:8px;
+  background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);
+}
+.typewriter{border-right:2px solid var(--blue);animation:blink .7s step-end infinite;}
+@keyframes blink{0%,100%{border-color:var(--blue);}50%{border-color:transparent;}}
+
+/* JSON Viewer */
+.json-card{grid-column:span 2;}
+@media(max-width:768px){.json-card{grid-column:span 1;}}
+.json-toolbar{display:flex;gap:0.75rem;margin-bottom:1rem;}
+.btn-sm{
+  padding:0.45rem 1rem;border-radius:6px;font-size:0.8rem;font-weight:600;
+  cursor:pointer;border:1px solid var(--border);
+  background:rgba(0,212,255,0.07);color:var(--blue);
+  transition:all .25s;letter-spacing:1px;
+}
+.btn-sm:hover{background:rgba(0,212,255,0.15);border-color:var(--blue);}
+.json-viewer{
+  background:rgba(0,0,0,0.5);border:1px solid var(--border);
+  border-radius:8px;padding:1.25rem;
+  font-family:'Courier New',monospace;font-size:0.78rem;
+  line-height:1.7;max-height:380px;overflow-y:auto;
+  color:#e2e8f0;white-space:pre;
+}
+.json-key{color:var(--blue);}
+.json-str{color:var(--green);}
+.json-num{color:var(--yellow);}
+.json-bool{color:var(--purple);}
+
+/* Quality Metrics */
+.qm-grid{display:flex;flex-wrap:wrap;gap:1rem;}
+.qm-item{
+  display:flex;align-items:center;gap:0.5rem;
+  font-size:0.85rem;
+}
+.qm-dot{
+  width:10px;height:10px;border-radius:50%;flex-shrink:0;
+}
+.qm-ok{background:var(--green);box-shadow:0 0 8px var(--green);}
+.qm-warn{background:var(--yellow);}
+
+/* ── GENE INFO ── */
+.genes-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;}
+@media(max-width:900px){.genes-grid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:600px){.genes-grid{grid-template-columns:1fr;}}
+.gene-card{
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:16px;padding:1.5rem;
+  position:relative;overflow:hidden;
+  transition:all .3s;cursor:default;
+}
+.gene-card::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,var(--blue),var(--purple));
+  opacity:0;transition:opacity .3s;border-radius:16px;
+}
+.gene-card:hover{
+  transform:translateY(-4px);
+  border-color:var(--blue);
+  box-shadow:0 0 40px rgba(0,212,255,0.25);
+}
+.gene-card:hover::after{opacity:0.05;}
+.gene-name{
+  font-size:1.4rem;font-weight:900;
+  background:linear-gradient(90deg,var(--blue),var(--purple));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  margin-bottom:0.25rem;
+}
+.gene-full{font-size:0.7rem;color:var(--text-dim);letter-spacing:1px;margin-bottom:1rem;}
+.gene-drugs{display:flex;flex-wrap:wrap;gap:0.4rem;margin-bottom:0.75rem;}
+.gene-drug-tag{
+  padding:0.2rem 0.6rem;border-radius:4px;font-size:0.72rem;
+  background:rgba(0,212,255,0.1);border:1px solid rgba(0,212,255,0.2);color:var(--blue);
+}
+.gene-variants{font-size:0.78rem;color:var(--text-dim);line-height:1.6;}
+
+/* ── HOW IT WORKS ── */
+.steps-row{
+  display:flex;align-items:flex-start;justify-content:space-between;
+  position:relative;gap:1rem;
+  flex-wrap:wrap;
+}
+.steps-row::before{
+  content:'';
+  position:absolute;top:40px;left:12%;right:12%;height:2px;
+  background:linear-gradient(90deg,var(--blue),var(--purple),var(--green));
+  z-index:0;
+}
+@media(max-width:700px){.steps-row::before{display:none;}}
+.step-item{
+  flex:1;min-width:180px;text-align:center;position:relative;z-index:1;
+}
+.step-num{
+  width:80px;height:80px;border-radius:50%;
+  background:linear-gradient(135deg,var(--blue),var(--purple));
+  display:flex;align-items:center;justify-content:center;
+  font-size:2rem;margin:0 auto 1rem;
+  box-shadow:0 0 30px rgba(0,212,255,0.4);
+  animation:step-pulse 2s ease-in-out infinite;
+}
+@keyframes step-pulse{
+  0%,100%{transform:scale(1);}
+  50%{transform:scale(1.05);}
+}
+.step-title{font-size:1rem;font-weight:700;margin-bottom:0.4rem;}
+.step-desc{font-size:0.82rem;color:var(--text-dim);line-height:1.5;}
+
+/* ── FOOTER ── */
+footer{
+  position:relative;z-index:2;
+  border-top:1px solid var(--border);
+  padding:2.5rem 2rem;
+  text-align:center;
+  background:rgba(0,0,0,0.3);
+}
+.footer-logo{
+  font-size:1.8rem;font-weight:900;letter-spacing:3px;
+  background:linear-gradient(90deg,var(--blue),var(--green));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  margin-bottom:0.5rem;
+}
+.footer-text{color:var(--text-dim);font-size:0.85rem;margin-bottom:0.5rem;}
+.footer-badges{display:flex;justify-content:center;gap:1rem;flex-wrap:wrap;margin-top:1rem;}
+.footer-badge{
+  padding:0.3rem 1rem;border-radius:999px;
+  border:1px solid var(--border);font-size:0.75rem;color:var(--text-dim);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-track{background:rgba(0,0,0,0.2);}
+::-webkit-scrollbar-thumb{background:rgba(0,212,255,0.3);border-radius:3px;}
+
+/* Fade in animation for results */
+.fade-in{animation:fadeIn 0.6s ease both;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+.fade-in-1{animation-delay:.1s;}
+.fade-in-2{animation-delay:.2s;}
+.fade-in-3{animation-delay:.3s;}
+.fade-in-4{animation-delay:.4s;}
+.fade-in-5{animation-delay:.5s;}
+.fade-in-6{animation-delay:.6s;}
+
+/* Divider line with glow */
+.glow-divider{
+  height:1px;background:linear-gradient(90deg,transparent,var(--blue),transparent);
+  margin:0;opacity:0.4;
+}
+
+/* Toast */
+#toast{
+  position:fixed;bottom:2rem;right:2rem;z-index:300;
+  padding:0.85rem 1.5rem;border-radius:8px;
+  background:rgba(0,255,136,0.15);border:1px solid var(--green);color:var(--green);
+  font-size:0.9rem;font-weight:600;
+  transform:translateY(100px);opacity:0;
+  transition:all .3s;
+}
+#toast.show{transform:translateY(0);opacity:1;}
+</style>
+</head>
+<body>
+
+<!-- Particle Background -->
+<canvas id="particleCanvas"></canvas>
+
+<!-- Toast -->
+<div id="toast">Copied to clipboard!</div>
+
+<!-- Nav -->
+<nav>
+  <div class="nav-logo">⬡ PHARMAGUARD</div>
+  <div class="nav-links">
+    <a href="#tool">Analyze</a>
+    <a href="#genes">Genes</a>
+    <a href="#how">How It Works</a>
+  </div>
+</nav>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay">
+  <div class="dna-spinner"></div>
+  <div class="loading-text">Analyzing Genome...</div>
+  <div class="loading-steps">
+    <div class="loading-step active" id="ls1"><div class="step-dot"></div>Parsing VCF file</div>
+    <div class="loading-step" id="ls2"><div class="step-dot"></div>Detecting pharmacogenomic variants</div>
+    <div class="loading-step" id="ls3"><div class="step-dot"></div>Computing drug interactions</div>
+    <div class="loading-step" id="ls4"><div class="step-dot"></div>Generating clinical explanation</div>
+    <div class="loading-step" id="ls5"><div class="step-dot"></div>Preparing risk assessment</div>
+  </div>
+</div>
+
+<!-- Hero -->
+<section id="hero">
+  <canvas id="dnaCanvas" width="300" height="500"></canvas>
+  <div class="hero-content">
+    <div class="hero-badge">🧬 RIFT 2026 · Pharmacogenomics Track</div>
+    <h1 class="hero-title">PharmaGuard</h1>
+    <div class="hero-subtitle">AI-Powered Pharmacogenomic Risk Prediction</div>
+    <p class="hero-tagline">Preventing adverse drug reactions through precision genomics. Upload your VCF file and discover your personalized drug risk profile in seconds.</p>
+    <a href="#tool" class="btn-primary"><span>🧪</span><span>Start Analysis</span></a>
+  </div>
+</section>
+
+<!-- Stats Bar -->
+<div class="stats-bar" style="position:relative;z-index:2;">
+  <div class="stat-item">
+    <div class="stat-num" data-target="100000">0</div>
+    <div class="stat-label">Deaths/Year from ADRs</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-num">6</div>
+    <div class="stat-label">Critical Genes Analyzed</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-num">CPIC</div>
+    <div class="stat-label">Guideline Aligned</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-num">AI</div>
+    <div class="stat-label">Powered Explanations</div>
+  </div>
+</div>
+
+<div class="glow-divider"></div>
+
+<!-- Analysis Tool -->
+<section class="section" id="tool">
+  <div class="container">
+    <div class="section-title">
+      <h2>Genomic Analysis</h2>
+      <p>Upload your VCF file and select drugs to receive personalized pharmacogenomic risk assessment</p>
+    </div>
+    <div class="tool-grid">
+      <!-- Left: Upload -->
+      <div>
+        <div class="panel-label">01 · Upload VCF File</div>
+        <div class="upload-zone" id="uploadZone">
+          <input type="file" id="vcfFileInput" accept=".vcf,.txt">
+          <div class="upload-icon">🧬</div>
+          <div class="upload-title">Drop your VCF file here</div>
+          <div class="upload-sub">or click to browse · .vcf format · max 5MB</div>
+          <div class="upload-file-info" id="fileInfo">✓ File loaded: <span id="fileName"></span></div>
+        </div>
+        <div style="margin-top:1rem;">
+          <div class="panel-label" style="margin-bottom:0.5rem;">Sample VCF Structure</div>
+          <div class="vcf-sample">
+<span class="vcf-meta">##fileformat=VCFv4.2</span>
+<span class="vcf-meta">##INFO=&lt;ID=GENE,Number=1,Type=String&gt;</span>
+<span class="vcf-meta">##INFO=&lt;ID=STAR,Number=1,Type=String&gt;</span>
+<span class="vcf-meta">##INFO=&lt;ID=RS,Number=1,Type=String&gt;</span>
+<span class="vcf-header">#CHROM POS      ID        REF ALT INFO</span>
+<span class="vcf-data">chr22  42522613 rs3892097 C   T   GENE=CYP2D6;STAR=*4;RS=rs3892097</span>
+<span class="vcf-data">chr10  96521657 rs1799853 C   T   GENE=CYP2C9;STAR=*2;RS=rs1799853</span>
+<span class="vcf-data">chr10  96702047 rs1057910 A   C   GENE=CYP2C9;STAR=*3;RS=rs1057910</span>
+<span class="vcf-data">chr6   18157629 rs4244285 G   A   GENE=CYP2C19;STAR=*2;RS=rs4244285</span>
+<span class="vcf-data">chr12  21331549 rs4149056 T   C   GENE=SLCO1B1;STAR=*5;RS=rs4149056</span>
+          </div>
+        </div>
+        <button class="btn-sm" style="margin-top:0.75rem;width:100%;" onclick="loadDemoVCF()">⚡ Load Demo VCF File</button>
+      </div>
+
+      <!-- Right: Drug + Analyze -->
+      <div class="drug-panel">
+        <div>
+          <div class="panel-label">02 · Select Drug(s)</div>
+          <input type="text" class="drug-input" id="drugInput" placeholder="e.g. CODEINE, WARFARIN" readonly>
+          <div class="drug-chips" id="drugChips">
+            <div class="drug-chip" data-drug="CODEINE" onclick="toggleDrug(this)">CODEINE</div>
+            <div class="drug-chip" data-drug="WARFARIN" onclick="toggleDrug(this)">WARFARIN</div>
+            <div class="drug-chip" data-drug="CLOPIDOGREL" onclick="toggleDrug(this)">CLOPIDOGREL</div>
+            <div class="drug-chip" data-drug="SIMVASTATIN" onclick="toggleDrug(this)">SIMVASTATIN</div>
+            <div class="drug-chip" data-drug="AZATHIOPRINE" onclick="toggleDrug(this)">AZATHIOPRINE</div>
+            <div class="drug-chip" data-drug="FLUOROURACIL" onclick="toggleDrug(this)">FLUOROURACIL</div>
+          </div>
+        </div>
+        <div style="margin-top:auto;">
+          <button class="btn-analyze" id="analyzeBtn" onclick="startAnalysis()" disabled>
+            ⬡ Analyze Pharmacogenomics
+          </button>
+          <button class="btn-sm" style="margin-top:0.75rem;width:100%;" onclick="clearAllInputs()">🗑 Clear VCF & Drug Selection</button>
+          <div style="text-align:center;margin-top:0.75rem;font-size:0.75rem;color:var(--text-dim);">
+            Powered by CPIC Guidelines · Results for educational use only
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Results -->
+<section id="results">
+  <div class="container">
+    <div class="results-header">
+      <div class="patient-info">
+        <div class="patient-id" id="r-patient-id">PATIENT_001</div>
+        <div class="patient-ts" id="r-timestamp"></div>
+      </div>
+      <div style="display:flex;gap:0.75rem;align-items:center;">
+        <span style="font-size:0.8rem;color:var(--text-dim);">Drug:</span>
+        <span id="r-drug-label" style="font-weight:700;color:var(--blue);letter-spacing:1px;"></span>
+      </div>
+    </div>
+
+    <div class="results-grid">
+      <!-- Risk Assessment -->
+      <div class="card risk-card fade-in fade-in-1">
+        <div class="card-label">Risk Assessment</div>
+        <div class="risk-display">
+          <div class="risk-badge" id="r-risk-badge">
+            <div class="risk-icon" id="r-risk-icon">⚪</div>
+            <div class="risk-label-text" id="r-risk-label">Unknown</div>
+          </div>
+          <div class="risk-details">
+            <div class="confidence-row">
+              <div class="confidence-circle">
+                <svg viewBox="0 0 80 80" width="90" height="90">
+                  <circle class="track" cx="40" cy="40" r="36"/>
+                  <circle class="fill" id="confidenceFill" cx="40" cy="40" r="36"/>
+                </svg>
+                <div class="confidence-pct" id="confidencePct">0%</div>
+              </div>
+              <div>
+                <div style="font-weight:700;font-size:1.1rem;" id="r-confidence">0.00</div>
+                <div class="confidence-label">Confidence Score</div>
+              </div>
+            </div>
+            <div class="severity-row">
+              <span style="font-size:0.85rem;color:var(--text-dim);">Severity:</span>
+              <span class="severity-badge" id="r-severity">Unknown</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PGx Profile -->
+      <div class="card fade-in fade-in-2">
+        <div class="card-label">Pharmacogenomic Profile</div>
+        <table style="width:100%;font-size:0.9rem;">
+          <tr><td style="color:var(--text-dim);padding:0.4rem 0;width:40%;">Primary Gene</td>
+              <td style="font-weight:700;color:var(--blue);" id="r-gene">—</td></tr>
+          <tr><td style="color:var(--text-dim);padding:0.4rem 0;">Diplotype</td>
+            <td style="font-family:monospace;color:var(--green);" id="r-diplotype">—</td></tr>
+          <tr><td style="color:var(--text-dim);padding:0.4rem 0;">Phenotype</td>
+              <td id="r-phenotype">—</td></tr>
+          <tr><td style="color:var(--text-dim);padding:0.4rem 0;">Variants</td>
+              <td style="font-weight:700;" id="r-variant-count">0</td></tr>
+        </table>
+      </div>
+
+      <!-- Detected Variants -->
+      <div class="card fade-in fade-in-3">
+        <div class="card-label">Detected Variants</div>
+        <div style="overflow-x:auto;">
+          <table class="variants-table">
+            <thead>
+              <tr><th>rsID</th><th>Gene</th><th>Allele</th><th>Effect</th><th>Zygosity</th></tr>
+            </thead>
+            <tbody id="r-variants-body">
+              <tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:1rem;">No variants detected</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Quality Metrics -->
+      <div class="card fade-in fade-in-4">
+        <div class="card-label">Quality Metrics</div>
+        <div class="qm-grid" id="r-quality">
+          <div class="qm-item"><div class="qm-dot qm-ok"></div><span>VCF Parse Success</span></div>
+        </div>
+      </div>
+
+      <!-- Clinical Recommendation -->
+      <div class="card rec-card fade-in fade-in-4">
+        <div class="card-label">Clinical Recommendation</div>
+        <div class="rec-action" id="r-rec-action">—</div>
+        <div class="rec-grid">
+          <div class="rec-item">
+            <div class="rec-item-label">Dosing Guidance</div>
+            <div class="rec-item-val" id="r-dosing">—</div>
+          </div>
+          <div class="rec-item">
+            <div class="rec-item-label">Alternative Drugs</div>
+            <div class="rec-item-val" id="r-alternatives">—</div>
+          </div>
+          <div class="rec-item">
+            <div class="rec-item-label">Urgency</div>
+            <div class="rec-item-val"><span class="urgency-badge" id="r-urgency">—</span></div>
+          </div>
+        </div>
+        <div style="margin-top:1rem;font-size:0.8rem;color:var(--text-dim);font-style:italic;" id="r-cpic-ref"></div>
+      </div>
+
+      <!-- LLM Explanation -->
+      <div class="card llm-card fade-in fade-in-5">
+        <div class="card-label">🤖 AI-Generated Clinical Explanation</div>
+        <div class="llm-section">
+          <div class="llm-section-title">Summary</div>
+          <div class="llm-text" id="r-summary">—</div>
+        </div>
+        <div class="llm-section">
+          <div class="llm-section-title">Biological Mechanism</div>
+          <div class="llm-text" id="r-mechanism">—</div>
+        </div>
+        <div class="llm-section">
+          <div class="llm-section-title">Risk Rationale</div>
+          <div class="llm-text" id="r-rationale">—</div>
+        </div>
+        <div class="llm-section">
+          <div class="llm-section-title">Patient-Friendly Explanation</div>
+          <div class="llm-text" id="r-patient">—</div>
+        </div>
+      </div>
+
+      <!-- JSON Output -->
+      <div class="card json-card fade-in fade-in-6">
+        <div class="card-label">JSON Output</div>
+        <div class="json-toolbar">
+          <button class="btn-sm" onclick="copyJSON()">📋 Copy JSON</button>
+          <button class="btn-sm" onclick="downloadJSON()">⬇ Download JSON</button>
+          <button class="btn-sm" onclick="downloadReportPDF()">📄 Download Report</button>
+        </div>
+        <div class="json-viewer" id="jsonViewer">{ }</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="glow-divider"></div>
+
+<!-- Gene Info -->
+<section class="section" id="genes">
+  <div class="container">
+    <div class="section-title">
+      <h2>Pharmacogenomic Genes</h2>
+      <p>Six critical genes that determine how your body metabolizes common medications</p>
+    </div>
+    <div class="genes-grid">
+      <div class="gene-card">
+        <div class="gene-name">CYP2D6</div>
+        <div class="gene-full">Cytochrome P450 2D6</div>
+        <div class="gene-drugs"><span class="gene-drug-tag">CODEINE</span></div>
+        <div class="gene-variants">Metabolizes ~25% of all drugs. Key variants: *4 (PM), *10 (IM), *17, *2 (NM/RM). Poor metabolizers risk opioid toxicity; ultra-rapid metabolizers may have inadequate analgesia.</div>
+      </div>
+      <div class="gene-card">
+        <div class="gene-name">CYP2C19</div>
+        <div class="gene-full">Cytochrome P450 2C19</div>
+        <div class="gene-drugs"><span class="gene-drug-tag">CLOPIDOGREL</span></div>
+        <div class="gene-variants">Activates prodrugs like clopidogrel. Variants *2, *3 cause loss-of-function (PM). *17 causes increased activity. PMs cannot activate clopidogrel → inadequate antiplatelet effect.</div>
+      </div>
+      <div class="gene-card">
+        <div class="gene-name">CYP2C9</div>
+        <div class="gene-full">Cytochrome P450 2C9</div>
+        <div class="gene-drugs"><span class="gene-drug-tag">WARFARIN</span></div>
+        <div class="gene-variants">Primary warfarin metabolizer. *2 and *3 alleles reduce enzyme activity by 30–90%, causing warfarin accumulation and increased bleeding risk. Dose reduction required.</div>
+      </div>
+      <div class="gene-card">
+        <div class="gene-name">SLCO1B1</div>
+        <div class="gene-full">Solute Carrier Organic Anion 1B1</div>
+        <div class="gene-drugs"><span class="gene-drug-tag">SIMVASTATIN</span></div>
+        <div class="gene-variants">Hepatic transporter for statins. *5 allele (rs4149056) reduces transport, increasing plasma simvastatin levels 2-3x and causing myopathy/rhabdomyolysis risk.</div>
+      </div>
+      <div class="gene-card">
+        <div class="gene-name">TPMT</div>
+        <div class="gene-full">Thiopurine S-Methyltransferase</div>
+        <div class="gene-drugs"><span class="gene-drug-tag">AZATHIOPRINE</span></div>
+        <div class="gene-variants">Inactivates thiopurine drugs. Deficient patients (*2, *3A, *3B, *3C) accumulate toxic metabolites causing severe myelosuppression. Requires 10x dose reduction.</div>
+      </div>
+      <div class="gene-card">
+        <div class="gene-name">DPYD</div>
+        <div class="gene-full">Dihydropyrimidine Dehydrogenase</div>
+        <div class="gene-drugs"><span class="gene-drug-tag">FLUOROURACIL</span></div>
+        <div class="gene-variants">Catabolizes fluorouracil. *2A (rs3918290) causes complete enzyme deficiency → drug accumulation → life-threatening toxicity. CONTRAINDICATED with full-dose 5-FU.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="glow-divider"></div>
+
+<!-- How It Works -->
+<section class="section" id="how" style="background:rgba(0,10,30,0.3);">
+  <div class="container">
+    <div class="section-title">
+      <h2>How It Works</h2>
+      <p>Four steps from raw genomic data to clinical decision support</p>
+    </div>
+    <div class="steps-row">
+      <div class="step-item">
+        <div class="step-num">📁</div>
+        <div class="step-title">Upload VCF</div>
+        <div class="step-desc">Upload standard VCF v4.2 file containing your genomic variant data with pharmacogenomic annotations</div>
+      </div>
+      <div class="step-item">
+        <div class="step-num">🔬</div>
+        <div class="step-title">Gene Analysis</div>
+        <div class="step-desc">Our engine scans 6 critical pharmacogenes and maps detected variants to known star alleles</div>
+      </div>
+      <div class="step-item">
+        <div class="step-num">⚡</div>
+        <div class="step-title">Risk Prediction</div>
+        <div class="step-desc">AI models cross-reference variants with CPIC guidelines to predict drug-specific risk levels</div>
+      </div>
+      <div class="step-item">
+        <div class="step-num">📋</div>
+        <div class="step-title">Clinical Report</div>
+        <div class="step-desc">Receive structured JSON output with dosing guidance, alternatives, and LLM-generated explanations</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="footer-logo">⬡ PHARMAGUARD</div>
+  <div class="footer-text">AI-Powered Pharmacogenomic Risk Prediction System</div>
+  <div class="footer-text" style="margin-top:0.25rem;font-size:0.8rem;">Built for RIFT 2026 Hackathon · Pharmacogenomics / Explainable AI Track</div>
+  <div class="footer-badges">
+    <span class="footer-badge">#RIFT2026</span>
+    <span class="footer-badge">#PharmaGuard</span>
+    <span class="footer-badge">#Pharmacogenomics</span>
+    <span class="footer-badge">#AIinHealthcare</span>
+  </div>
+  <div style="margin-top:1.5rem;font-size:0.72rem;color:#334155;">
+    ⚠ For educational and research purposes only. Not for clinical use without physician oversight.
+  </div>
+</footer>
+
+<script>
+// ══════════════════════════════════════
+//  PARTICLE BACKGROUND
+// ══════════════════════════════════════
+(function(){
+  const c=document.getElementById('particleCanvas');
+  const ctx=c.getContext('2d');
+  let W=c.width=window.innerWidth,H=c.height=window.innerHeight;
+  window.addEventListener('resize',()=>{W=c.width=window.innerWidth;H=c.height=window.innerHeight;});
+  const particles=[];
+  for(let i=0;i<60;i++){
+    particles.push({
+      x:Math.random()*W,y:Math.random()*H,
+      r:Math.random()*2+0.5,
+      vx:(Math.random()-.5)*0.3,vy:(Math.random()-.5)*0.3,
+      alpha:Math.random()*0.6+0.2,
+      color:['#00d4ff','#00ff88','#8b5cf6','#f472b6'][Math.floor(Math.random()*4)]
+    });
+  }
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    particles.forEach(p=>{
+      ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle=p.color;ctx.globalAlpha=p.alpha;ctx.fill();
+      p.x+=p.vx;p.y+=p.vy;
+      if(p.x<0)p.x=W;if(p.x>W)p.x=0;
+      if(p.y<0)p.y=H;if(p.y>H)p.y=0;
+    });
+    // connection lines
+    ctx.globalAlpha=1;
+    for(let i=0;i<particles.length;i++){
+      for(let j=i+1;j<particles.length;j++){
+        const dx=particles[i].x-particles[j].x,dy=particles[i].y-particles[j].y;
+        const d=Math.sqrt(dx*dx+dy*dy);
+        if(d<120){
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x,particles[i].y);
+          ctx.lineTo(particles[j].x,particles[j].y);
+          ctx.strokeStyle='rgba(0,212,255,'+(0.08*(1-d/120))+')';
+          ctx.lineWidth=0.5;ctx.stroke();
+        }
+      }
+    }
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// ══════════════════════════════════════
+//  DNA HELIX CANVAS ANIMATION
+// ══════════════════════════════════════
+(function(){
+  const c=document.getElementById('dnaCanvas');
+  if(!c)return;
+  const ctx=c.getContext('2d');
+  const W=c.width,H=c.height;
+  let t=0;
+  const COLORS=['#00d4ff','#00ff88'];
+  function drawHelix(){
+    ctx.clearRect(0,0,W,H);
+    const cx=W/2,spacing=18,r=55,numPts=24;
+    for(let i=0;i<numPts;i++){
+      const y=i*(H/numPts)+t%(H/numPts);
+      const phase=(i/numPts)*Math.PI*4+t*0.04;
+      const x1=cx+Math.sin(phase)*r;
+      const x2=cx+Math.sin(phase+Math.PI)*r;
+      const z1=Math.cos(phase);
+      const z2=Math.cos(phase+Math.PI);
+      const alpha1=(z1+1)/2*0.8+0.1;
+      const alpha2=(z2+1)/2*0.8+0.1;
+      const sz1=3+z1*1.5;const sz2=3+z2*1.5;
+      // strand 1
+      ctx.beginPath();ctx.arc(x1,y,Math.max(sz1,1),0,Math.PI*2);
+      ctx.fillStyle=`rgba(0,212,255,${alpha1})`;
+      ctx.shadowColor='#00d4ff';ctx.shadowBlur=10*alpha1;
+      ctx.fill();
+      // strand 2
+      ctx.beginPath();ctx.arc(x2,y,Math.max(sz2,1),0,Math.PI*2);
+      ctx.fillStyle=`rgba(0,255,136,${alpha2})`;
+      ctx.shadowColor='#00ff88';ctx.shadowBlur=10*alpha2;
+      ctx.fill();
+      // rungs
+      if(i%3===0){
+        const rAlpha=Math.min(alpha1,alpha2)*0.5;
+        ctx.beginPath();ctx.moveTo(x1,y);ctx.lineTo(x2,y);
+        ctx.strokeStyle=`rgba(139,92,246,${rAlpha})`;
+        ctx.lineWidth=1.5;ctx.shadowBlur=5;ctx.shadowColor='#8b5cf6';
+        ctx.stroke();
+      }
+    }
+    ctx.shadowBlur=0;
+    t+=0.5;
+    requestAnimationFrame(drawHelix);
+  }
+  drawHelix();
+})();
+
+// ══════════════════════════════════════
+//  STATS COUNTER ANIMATION
+// ══════════════════════════════════════
+function animateCounter(el,target){
+  let cur=0,step=target/80;
+  const id=setInterval(()=>{
+    cur=Math.min(cur+step,target);
+    el.textContent=Math.floor(cur).toLocaleString()+'+';
+    if(cur>=target)clearInterval(id);
+  },20);
+}
+
+// ══════════════════════════════════════
+//  GLOBAL VARIABLE DECLARATIONS
+// ══════════════════════════════════════
+let vcfContent='';
+let selectedDrugs=[];
+let currentResults=[];
+let patientCounter=Math.floor(Math.random()*900)+100;
+
+// ══════════════════════════════════════
+//  FILE UPLOAD FUNCTIONS
+// ══════════════════════════════════════
+function loadFile(f){
+  if(f.size>5*1024*1024){alert('File too large. Max 5MB.');return;}
+  const r=new FileReader();
+  r.onload=ev=>{
+    vcfContent=ev.target.result;
+    document.getElementById('fileName').textContent=f.name+' ('+Math.round(f.size/1024)+'KB)';
+    document.getElementById('fileInfo').style.display='block';
+    document.getElementById('uploadZone').classList.add('file-loaded');
+    checkReady();
+  };
+  r.readAsText(f);
+}
+
+const DEMO_VCF=`##fileformat=VCFv4.2
+##source=PharmaGuard_Demo
+##INFO=<ID=GENE,Number=1,Type=String,Description="Gene symbol">
+##INFO=<ID=STAR,Number=1,Type=String,Description="Star allele">
+##INFO=<ID=RS,Number=1,Type=String,Description="dbSNP rsID">
+#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO
+chr22\t42522613\trs3892097\tC\tT\t.\tPASS\tGENE=CYP2D6;STAR=*4;RS=rs3892097
+chr10\t96521657\trs1799853\tC\tT\t.\tPASS\tGENE=CYP2C9;STAR=*2;RS=rs1799853
+chr10\t96702047\trs1057910\tA\tC\t.\tPASS\tGENE=CYP2C9;STAR=*3;RS=rs1057910
+chr6\t18157629\trs4244285\tG\tA\t.\tPASS\tGENE=CYP2C19;STAR=*2;RS=rs4244285
+chr12\t21331549\trs4149056\tT\tC\t.\tPASS\tGENE=SLCO1B1;STAR=*5;RS=rs4149056`;
+
+function loadDemoVCF(){
+  vcfContent=DEMO_VCF;
+  document.getElementById('fileName').textContent='demo_patient.vcf (sample)';
+  document.getElementById('fileInfo').style.display='block';
+  document.getElementById('uploadZone').classList.add('file-loaded');
+  checkReady();
+}
+
+function toggleDrug(chip){
+  const drug=chip.dataset.drug;
+  if(chip.classList.contains('active')){
+    chip.classList.remove('active');
+    selectedDrugs=selectedDrugs.filter(d=>d!==drug);
+  }else{
+    chip.classList.add('active');
+    selectedDrugs.push(drug);
+  }
+  document.getElementById('drugInput').value=selectedDrugs.join(', ');
+  checkReady();
+}
+
+function checkReady(){
+  const btn=document.getElementById('analyzeBtn');
+  btn.disabled=!(vcfContent&&selectedDrugs.length>0);
+}
+
+function clearAllInputs(){
+  vcfContent='';
+  const vcfInput=document.getElementById('vcfFileInput');
+  if(vcfInput)vcfInput.value='';
+  const fi=document.getElementById('fileInfo');
+  if(fi)fi.style.display='none';
+  const uz=document.getElementById('uploadZone');
+  if(uz)uz.classList.remove('file-loaded');
+  const fn=document.getElementById('fileName');
+  if(fn)fn.textContent='';
+  selectedDrugs=[];
+  document.querySelectorAll('.drug-chip').forEach(c=>c.classList.remove('active'));
+  const di=document.getElementById('drugInput');
+  if(di)di.value='';
+  const res=document.getElementById('results');
+  if(res)res.classList.remove('visible');
+  checkReady();
+}
+
+// ══════════════════════════════════════
+//  PHARMACOGENOMICS KNOWLEDGE BASE
+// ══════════════════════════════════════
+const VARIANT_DB={
+  rs3892097:{gene:'CYP2D6',star:'*4',effect:'Loss of function',zygosity:'heterozygous',significance:'Poor metabolizer marker',phenotypeClass:'PM',activity:0},
+  rs1065852:{gene:'CYP2D6',star:'*10',effect:'Reduced function',zygosity:'heterozygous',significance:'Intermediate metabolizer marker',phenotypeClass:'IM',activity:0.5},
+  rs16947:{gene:'CYP2D6',star:'*2',effect:'Normal/increased activity',zygosity:'heterozygous',significance:'Normal metabolizer',phenotypeClass:'NM',activity:1},
+  rs5030655:{gene:'CYP2D6',star:'*6',effect:'No function',zygosity:'heterozygous',significance:'Poor metabolizer marker',phenotypeClass:'PM',activity:0},
+  rs4244285:{gene:'CYP2C19',star:'*2',effect:'Loss of function',zygosity:'heterozygous',significance:'Poor metabolizer marker',phenotypeClass:'PM',activity:0},
+  rs4986893:{gene:'CYP2C19',star:'*3',effect:'Loss of function',zygosity:'heterozygous',significance:'Poor metabolizer marker',phenotypeClass:'PM',activity:0},
+  rs12248560:{gene:'CYP2C19',star:'*17',effect:'Increased function',zygosity:'heterozygous',significance:'Rapid metabolizer marker',phenotypeClass:'RM',activity:1.5},
+  rs1799853:{gene:'CYP2C9',star:'*2',effect:'Reduced function (30%)',zygosity:'heterozygous',significance:'Intermediate metabolizer',phenotypeClass:'IM',activity:0.7},
+  rs1057910:{gene:'CYP2C9',star:'*3',effect:'Significantly reduced (90%)',zygosity:'heterozygous',significance:'Poor metabolizer marker',phenotypeClass:'PM',activity:0.1},
+  rs4149056:{gene:'SLCO1B1',star:'*5',effect:'Reduced hepatic transport',zygosity:'heterozygous',significance:'Myopathy risk marker',phenotypeClass:'PM',activity:0},
+  rs1800462:{gene:'TPMT',star:'*2',effect:'Reduced enzyme activity',zygosity:'heterozygous',significance:'Intermediate/Poor metabolizer',phenotypeClass:'IM',activity:0.5},
+  rs1800460:{gene:'TPMT',star:'*3B',effect:'Reduced enzyme activity',zygosity:'heterozygous',significance:'Intermediate metabolizer',phenotypeClass:'IM',activity:0.5},
+  rs1142345:{gene:'TPMT',star:'*3C',effect:'Reduced enzyme activity',zygosity:'heterozygous',significance:'Intermediate metabolizer',phenotypeClass:'IM',activity:0.5},
+  rs3918290:{gene:'DPYD',star:'*2A',effect:'No enzyme function',zygosity:'heterozygous',significance:'Critical toxicity risk',phenotypeClass:'PM',activity:0},
+  rs67376798:{gene:'DPYD',star:'*13',effect:'No enzyme function',zygosity:'heterozygous',significance:'Critical toxicity risk',phenotypeClass:'PM',activity:0}
+};
+
+const DRUG_GENE_MAP={
+  CODEINE:{gene:'CYP2D6',pmRisk:'Toxic',imRisk:'Adjust Dosage',nmRisk:'Safe',rmRisk:'Safe',urmRisk:'Toxic'},
+  WARFARIN:{gene:'CYP2C9',pmRisk:'Adjust Dosage',imRisk:'Adjust Dosage',nmRisk:'Safe',rmRisk:'Safe',urmRisk:'Safe'},
+  CLOPIDOGREL:{gene:'CYP2C19',pmRisk:'Ineffective',imRisk:'Adjust Dosage',nmRisk:'Safe',rmRisk:'Safe',urmRisk:'Adjust Dosage'},
+  SIMVASTATIN:{gene:'SLCO1B1',pmRisk:'Toxic',imRisk:'Adjust Dosage',nmRisk:'Safe',rmRisk:'Safe',urmRisk:'Safe'},
+  AZATHIOPRINE:{gene:'TPMT',pmRisk:'Toxic',imRisk:'Adjust Dosage',nmRisk:'Safe',rmRisk:'Safe',urmRisk:'Safe'},
+  FLUOROURACIL:{gene:'DPYD',pmRisk:'Toxic',imRisk:'Adjust Dosage',nmRisk:'Safe',rmRisk:'Safe',urmRisk:'Safe'}
+};
+
+const RISK_CONFIG={
+  Safe:{icon:'✅',cls:'safe',severity:'none',confidence:0.95},
+  'Adjust Dosage':{icon:'⚠️',cls:'adjust',severity:'moderate',confidence:0.88},
+  Toxic:{icon:'☠️',cls:'toxic',severity:'critical',confidence:0.93},
+  Ineffective:{icon:'🚫',cls:'ineffective',severity:'high',confidence:0.90},
+  Unknown:{icon:'❓',cls:'unknown',severity:'none',confidence:0.50}
+};
+
+const CPIC_RECOMMENDATIONS={
+  CODEINE:{
+    PM:{action:'Avoid codeine — use alternative',dosing:'Do NOT use codeine. Risk of life-threatening opioid toxicity due to CYP2D6 poor metabolism.',alternatives:['Acetaminophen','NSAIDs','Tramadol (with caution)'],monitoring:true,urgency:'immediate',cpic:'CPIC Guideline for CYP2D6 and Codeine (2014)'},
+    IM:{action:'Use with caution — reduced dose',dosing:'Consider 50-75% of standard dose. Monitor for inadequate analgesia.',alternatives:['Oxycodone','Hydromorphone'],monitoring:true,urgency:'monitoring',cpic:'CPIC Guideline for CYP2D6 and Codeine (2014)'},
+    NM:{action:'Standard dosing',dosing:'Use recommended doses per prescribing information.',alternatives:[],monitoring:false,urgency:'routine',cpic:'CPIC Guideline for CYP2D6 and Codeine (2014)'},
+    RM:{action:'Standard dosing',dosing:'Standard codeine doses are appropriate.',alternatives:[],monitoring:false,urgency:'routine',cpic:'CPIC Guideline for CYP2D6 and Codeine (2014)'},
+    URM:{action:'Avoid — ultra-rapid toxicity risk',dosing:'Avoid codeine. URM patients convert codeine to morphine too rapidly, causing toxicity.',alternatives:['Non-opioid analgesics'],monitoring:true,urgency:'immediate',cpic:'CPIC Guideline for CYP2D6 and Codeine (2014)'}
+  },
+  WARFARIN:{
+    PM:{action:'Reduce warfarin dose significantly',dosing:'Reduce starting dose by 25–50%. Begin with 5mg/day or less. Increase INR monitoring (weekly initially).',alternatives:['Apixaban','Rivaroxaban (no dose adjustment needed)'],monitoring:true,urgency:'immediate',cpic:'CPIC Guideline for CYP2C9, VKORC1 and Warfarin (2017)'},
+    IM:{action:'Reduce warfarin dose moderately',dosing:'Reduce starting dose by 15–30%. Monitor INR closely.',alternatives:[],monitoring:true,urgency:'monitoring',cpic:'CPIC Guideline for CYP2C9, VKORC1 and Warfarin (2017)'},
+    NM:{action:'Standard dosing',dosing:'Use standard warfarin dosing per prescribing guidelines.',alternatives:[],monitoring:false,urgency:'routine',cpic:'CPIC Guideline for CYP2C9, VKORC1 and Warfarin (2017)'},
+    RM:{action:'Standard dosing',dosing:'Standard warfarin dosing appropriate.',alternatives:[],monitoring:false,urgency:'routine',cpic:'CPIC Guideline for CYP2C9, VKORC1 and Warfarin (2017)'},
+    URM:{action:'Standard dosing',dosing:'Standard warfarin dosing appropriate.',alternatives:[],monitoring:false,urgency:'routine',cpic:'CPIC Guideline for CYP2C9, VKORC1 and Warfarin (2017)'}
+  },
+  CLOPIDOGREL:{
+    PM:{action:'Switch to alternative antiplatelet',dosing:'Clopidogrel is INEFFECTIVE. Cannot be activated by CYP2C19 poor metabolizers. Use prasugrel or ticagrelor.',alternatives:['Prasugrel','Ticagrelor'],monitoring:true,urgency:'immediate',cpic:'CPIC Guideline for CYP2C19 and Clopidogrel (2022)'},
+    IM:{action:'Consider alternative or higher dose',dosing:'Reduced clopidogrel activation. Consider ticagrelor or higher clopidogrel dose with monitoring.',alternatives:['Ticagrelor'],monitoring:true,urgency:'monitoring',cpic:'CPIC Guideline for CYP2C19 and Clopidogrel (2022)'},
+    NM:{action:'Standard dosing',dosing:'Standard clopidogrel dosing is appropriate.',alternatives:[],monitoring:false,urgency:'routine',cpic:'CPIC Guideline for CYP2C19 and Clopidogrel (2022)'},
+    RM:{action:'Standard dosing',dosing:'Standard dosing appropriate. No adjustment needed.',alternatives:[],monitoring:false,urgency:'routine',cpic:'CPIC Guideline for CYP2C19 and Clopidogrel (2022)'},
+    URM:{action:'Adjust — consider lower dose',dosing:'Rapid metabolism may require dose adjustment. Monitor platelet activity.',alternatives:[],monitoring:true,urgency:'monitoring',cpic:'CPIC Guideline for CYP2C19 and Clopidogrel (2022)'}
+  },
+  SIMVASTATIN:{
+    PM:{action:'Switch statin — myopathy risk',dosing:'AVOID simvastatin. SLCO1B1*5 increases plasma simvastatin 221%. Use pravastatin or rosuvastatin instead.',alternatives:['Pravastatin','Rosuvastatin','Fluvastatin'],monitoring:true,urgency:'immediate',cpic:'CPIC Guideline for SLCO1B1 and Simvastatin (2022)'},
+    IM:{action:'Use lower simvastatin dose',dosing:'Maximum simvastatin 20mg/day. Prefer alternative statin. Monitor for muscle symptoms.',alternatives:['Pravastatin 40mg','Rosuvastatin 10mg'],monitoring:true,urgency:'monitoring',cpic:'CPIC Guideline for SLCO1B1 and Simvastatin (2022)'},
+    NM:{action:'Standard dosing',dosing:'Standard simvastatin dosing is appropriate.',alternatives:[],monitoring:false,urgency:'routine',cpic:'CPIC Guideline for SLCO1B1 and Simvastatin (2022)'},
+    RM:{action:'Standard dosing',dosing:'Standard dosing appropriate.',alternatives:[],monitoring:false,urgency:'routine',cpic:'CPIC Guideline for SLCO1B1 and Simvastatin (2022)'},
+    URM:{action:'Standard dosing',dosing:'Standard dosing appropriate.',alternatives:[],monitoring:false,urgency:'routine',cpic:'CPIC Guideline for SLCO1B1 and Simvastatin (2022)'}
+  },
+  AZATHIOPRINE:{
+    PM:{action:'CONTRAINDICATED — severe toxicity',dosing:'Reduce to 10% of standard dose OR use alternative. TPMT deficiency causes toxic thioguanine nucleotide accumulation.',alternatives:['Mycophenolate mofetil','Cyclosporine'],monitoring:true,urgency:'immediate',cpic:'CPIC Guideline for TPMT/NUDT15 and Thiopurines (2018)'},
+    IM:{action:'Reduce dose — monitor closely',dosing:'Start at 30-70% of standard dose. Monitor CBC weekly × 4 weeks, then monthly.',alternatives:[],monitoring:true,urgency:'monitoring',cpic:'CPIC Guideline for TPMT/NUDT15 and Thiopurines (2018)'},
+    NM:{action:'Standard dosing',dosing:'Standard azathioprine dosing is appropriate.',alternatives:[],monitoring:false,urgency:'routine',cpic:'CPIC Guideline for TPMT/NUDT15 and Thiopurines (2018)'},
+    RM:{action:'Standard dosing',dosing:'Standard dosing appropriate.',alternatives:[],monitoring:false,urgency:'routine',cpic:'CPIC Guideline for TPMT/NUDT15 and Thiopurines (2018)'},
+    URM:{action:'Standard dosing',dosing:'Standard dosing appropriate.',alternatives:[],monitoring:false,urgency:'routine',cpic:'CPIC Guideline for TPMT/NUDT15 and Thiopurines (2018)'}
+  },
+  FLUOROURACIL:{
+    PM:{action:'CONTRAINDICATED — life-threatening toxicity',dosing:'ABSOLUTE CONTRAINDICATION. DPYD*2A causes complete enzyme deficiency. 5-FU accumulates to lethal levels. Use alternative chemotherapy.',alternatives:['Capecitabine (with extreme caution)','Raltitrexed','Irinotecan-based regimens'],monitoring:true,urgency:'immediate',cpic:'CPIC Guideline for DPYD and Fluoropyrimidines (2023)'},
+    IM:{action:'Reduce dose — 50% starting dose',dosing:'Reduce starting dose by 50%. Titrate based on toxicity. Enhanced monitoring required.',alternatives:[],monitoring:true,urgency:'monitoring',cpic:'CPIC Guideline for DPYD and Fluoropyrimidines (2023)'},
+    NM:{action:'Standard dosing',dosing:'Standard fluorouracil dosing is appropriate.',alternatives:[],monitoring:false,urgency:'routine',cpic:'CPIC Guideline for DPYD and Fluoropyrimidines (2023)'},
+    RM:{action:'Standard dosing',dosing:'Standard dosing appropriate.',alternatives:[],monitoring:false,urgency:'routine',cpic:'CPIC Guideline for DPYD and Fluoropyrimidines (2023)'},
+    URM:{action:'Standard dosing',dosing:'Standard dosing appropriate.',alternatives:[],monitoring:false,urgency:'routine',cpic:'CPIC Guideline for DPYD and Fluoropyrimidines (2023)'}
+  }
+};
+
+const LLM_EXPLANATIONS={
+  CODEINE:{
+    PM:{
+      summary:'Patient carries CYP2D6 loss-of-function variant(s) resulting in Poor Metabolizer phenotype. Codeine requires CYP2D6-mediated O-demethylation to morphine for analgesic effect. In PMs, this conversion is severely impaired, resulting in negligible morphine production and ineffective analgesia. However, paradoxically, standard codeine doses may cause toxicity through accumulation of unmetabolized codeine.',
+      mechanism:'CYP2D6 enzyme O-demethylates approximately 5-10% of an administered codeine dose to morphine (the active opioid). The CYP2D6*4 allele (rs3892097) introduces a splice site mutation that abolishes enzyme transcription. With zero CYP2D6 activity, codeine cannot be bioactivated to morphine, but the parent compound accumulates and alternative metabolic pathways may produce toxic intermediates.',
+      risk_rationale:'CPIC defines Poor Metabolizers as individuals with predicted CYP2D6 activity score of 0. For codeine, PMs face dual risks: (1) inadequate analgesia from absent morphine conversion and (2) potential adverse effects from codeine accumulation. This genetic profile is estimated to affect 5-10% of European-ancestry individuals. The FDA has issued black box warnings against codeine use in CYP2D6 PMs.',
+      patient:'Your DNA test shows that your body cannot properly convert codeine into its active pain-relieving form (morphine). This means codeine is unlikely to relieve your pain and may cause other side effects. Your doctor should prescribe a different pain medication that does not rely on this metabolic pathway.'
+    },
+    NM:{
+      summary:'Patient has normal CYP2D6 metabolizer status. No clinically significant variants detected. Standard codeine dosing is appropriate based on current CPIC guidelines.',
+      mechanism:'CYP2D6 enzyme functions normally, providing adequate O-demethylation of codeine to morphine at the expected 5-10% conversion rate.',
+      risk_rationale:'Normal metabolizer status indicates standard pharmacokinetics. No dose adjustment required per CPIC guidelines.',
+      patient:'Your genetic profile shows that your body processes codeine normally. Standard doses of codeine as prescribed by your doctor should be safe and effective for you.'
+    }
+  },
+  WARFARIN:{
+    PM:{
+      summary:'Patient carries CYP2C9 reduced-function variants (*2 and/or *3), significantly impairing warfarin S-enantiomer metabolism. This results in elevated plasma warfarin concentrations, excessive anticoagulation, and substantially increased bleeding risk. Dose reduction of 25-50% from standard initiation dose is required.',
+      mechanism:'CYP2C9 is the primary enzyme responsible for hydroxylation of S-warfarin (the more potent enantiomer, ~3-5x more anticoagulant activity than R-warfarin). CYP2C9*2 (rs1799853, Arg144Cys) reduces activity by ~30%. CYP2C9*3 (rs1057910, Ile359Leu) reduces activity by ~90%. Compound heterozygosity (*2/*3) results in <10% residual CYP2C9 activity, causing dramatic warfarin accumulation.',
+      risk_rationale:'CYP2C9 PMs require significantly lower warfarin doses. Population studies show *3 homozygotes require ~80% dose reduction. Risk of major bleeding events increases 3-fold in carriers of *2 or *3 alleles on standard dosing. CPIC strongly recommends genotype-guided dosing algorithms incorporating CYP2C9 and VKORC1 status.',
+      patient:'Your genetic test shows your liver breaks down the blood thinner warfarin more slowly than average. This means standard warfarin doses could cause dangerous bleeding. Your doctor will need to start you on a lower dose and monitor your blood clotting more frequently until the right dose is established.'
+    }
+  },
+  CLOPIDOGREL:{
+    PM:{
+      summary:'Patient carries CYP2C19 loss-of-function variant(s) resulting in Poor Metabolizer phenotype. Clopidogrel is a prodrug requiring CYP2C19 activation to its active thiol metabolite. In PMs, <10% of the drug reaches active form, rendering clopidogrel essentially ineffective for antiplatelet therapy. Alternative antiplatelet agents are strongly indicated.',
+      mechanism:'Clopidogrel requires two sequential CYP-mediated oxidation steps for bioactivation. The second step, converting the thiolactone intermediate to active drug, is predominantly (>80%) catalyzed by CYP2C19. CYP2C19*2 (rs4244285) creates a splice defect abolishing enzyme activity. With absent CYP2C19, active metabolite AUC is reduced by 86% in PMs, resulting in inadequate P2Y12 receptor inhibition and preserved platelet aggregation.',
+      risk_rationale:'Multiple large clinical trials (TRITON-TIMI 38, PLATO) demonstrate that CYP2C19 PMs have significantly higher rates of major adverse cardiovascular events (MACE) on clopidogrel compared to NMs, including myocardial infarction and stent thrombosis. The FDA added a boxed warning in 2010. CPIC strongly recommends alternative agents (prasugrel or ticagrelor) for CYP2C19 PMs with ACS or PCI.',
+      patient:'Your genetic test reveals your body cannot activate clopidogrel (Plavix) into its working form. This means clopidogrel would not protect you from blood clots the way it should. Your doctor should switch you to a different blood-thinning medication that does not need this activation step.'
+    }
+  },
+  SIMVASTATIN:{
+    PM:{
+      summary:'Patient carries SLCO1B1*5 variant (rs4149056), which severely impairs hepatic uptake of simvastatin. This results in 2-3 fold increased plasma simvastatin concentrations, dramatically increasing risk of statin-induced myopathy and potentially life-threatening rhabdomyolysis. Alternative statin therapy is strongly recommended.',
+      mechanism:'SLCO1B1 encodes OATP1B1, the primary hepatic uptake transporter for statins. The *5 allele (Val174Ala, rs4149056) reduces OATP1B1 transport activity by ~50-80%. With impaired hepatic uptake, simvastatin and its active acid form remain in systemic circulation, reaching skeletal muscle at elevated concentrations. Statin-induced myopathy occurs through mitochondrial dysfunction, reduced CoQ10 synthesis, and impaired calcium homeostasis in myocytes.',
+      risk_rationale:'SLCO1B1*5 homozygotes have 17-fold increased risk of myopathy on simvastatin 80mg. Even heterozygotes show significantly elevated risk. The SEARCH trial demonstrated clear genotype-phenotype correlation. CPIC recommends avoiding simvastatin in *5 carriers and prescribing pravastatin or rosuvastatin (which rely less on SLCO1B1 transport) as alternatives.',
+      patient:'Your genetic test shows a variant that prevents your body from properly removing simvastatin from your bloodstream. This causes the medication to build up to toxic levels in your muscles, which can cause severe muscle pain and even kidney damage. Your doctor should prescribe a different cholesterol medication that is safe for you.'
+    }
+  },
+  AZATHIOPRINE:{
+    PM:{
+      summary:'Patient carries TPMT loss-of-function variant(s) resulting in absent or severely reduced TPMT enzyme activity. In TPMT-deficient patients, azathioprine is shunted almost entirely toward cytotoxic 6-thioguanine nucleotides (6-TGNs), causing severe, potentially fatal myelosuppression. Azathioprine is contraindicated at standard doses; extreme dose reduction or alternative therapy is required.',
+      mechanism:'TPMT is responsible for methylation (inactivation) of thiopurine drugs including azathioprine metabolites. In TPMT-deficient patients, the 6-mercaptopurine derived from azathioprine cannot be methylated by TPMT and is instead extensively converted by hypoxanthine phosphoribosyltransferase (HPRT) to 6-TGNs. 6-TGNs incorporate into DNA, causing double-strand breaks and triggering apoptosis in rapidly dividing bone marrow cells, resulting in severe pancytopenia.',
+      risk_rationale:'TPMT-deficient patients (biallelic loss-of-function, ~0.3% prevalence) develop life-threatening myelosuppression within weeks of starting standard azathioprine doses. Even TPMT intermediate metabolizers (heterozygotes, ~10% prevalence) have significantly elevated 6-TGN levels. CPIC mandates dose reduction to 10% of standard for PM patients. Complete blood counts must be monitored weekly during initiation.',
+      patient:'Your genetic test shows your body is missing an enzyme that normally breaks down azathioprine. Without this enzyme, the drug builds up to toxic levels in your bone marrow, which can cause your blood cell counts to drop dangerously. Your doctor must use a much lower dose or switch you to a different medication.'
+    }
+  },
+  FLUOROURACIL:{
+    PM:{
+      summary:'Patient carries DPYD loss-of-function variant(s), most critically *2A (rs3918290), resulting in absent dihydropyrimidine dehydrogenase (DPD) activity. DPD catalyzes >80% of fluorouracil catabolism. In DPD-deficient patients, fluorouracil accumulates to life-threatening levels causing severe, potentially fatal toxicity including neutropenia, mucositis, neurotoxicity, and cardiotoxicity. This is an ABSOLUTE CONTRAINDICATION to standard-dose fluorouracil.',
+      mechanism:'DPD (encoded by DPYD) is responsible for the rate-limiting first step of pyrimidine catabolism, reducing the 5,6 double bond of uracil and fluorouracil. DPYD*2A results from a G>A splice site mutation (IVS14+1G>A) that causes exon 14 skipping, producing a truncated, non-functional protein. With absent DPD activity, >80% of fluorouracil cannot be catabolized and remains systemically active. The drug then extensively incorporates into RNA (causing cytotoxicity) and inhibits thymidylate synthase, both effects being dramatically amplified.',
+      risk_rationale:'DPD-deficient patients receiving standard 5-FU experience grade 4+ toxicities in >80% of cases, with mortality rates up to 10%. Even heterozygous carriers (*2A/*1) have 2-4 fold higher 5-FU exposure. Multiple regulatory agencies (EMA 2020, FDA) mandate DPYD genotyping before fluorouracil therapy. CPIC strongly recommends alternative chemotherapy regimens for DPYD *2A homozygotes.',
+      patient:'Your genetic test reveals a critical finding: your body lacks the enzyme needed to break down the chemotherapy drug fluorouracil (5-FU). Without this enzyme, the drug would reach toxic levels in your body very quickly, which could be life-threatening. Your oncologist must use a completely different chemotherapy approach for your treatment.'
+    }
+  }
+};
+
+// ══════════════════════════════════════
+//  VCF PARSING & ANALYSIS
+// ══════════════════════════════════════
+function parseVCF(content){
+  const lines=content.split('\n').filter(l=>l.trim()&&!l.startsWith('##'));
+  const data=[];
+  let headerLine=-1;
+  for(let i=0;i<lines.length;i++){
+    if(lines[i].startsWith('#CHROM')){headerLine=i;break;}
+  }
+  if(headerLine<0)return [];
+  for(let i=headerLine+1;i<lines.length;i++){
+    const fields=lines[i].split('\t');
+    if(fields.length<8)continue;
+    const [chrom,pos,id,ref,alt,qual,filter,info]=fields;
+    const infoObj={};
+    info.split(';').forEach(kv=>{
+      const [k,v]=kv.split('=');
+      if(k)infoObj[k]=(v||'');
+    });
+    data.push({chrom,pos,id,ref,alt,qual,filter,info:infoObj});
+  }
+  return data;
+}
+
+function computeRisk(variants,drug){
+  const geneMap=DRUG_GENE_MAP[drug];if(!geneMap)return {phenotype:'Unknown',activities:[]};
+  const targetGene=geneMap.gene;
+  let totalActivity=1;
+  const found=[];
+  variants.forEach(v=>{
+    if(v.info.GENE===targetGene||v.id in VARIANT_DB){
+      const vdb=VARIANT_DB[v.id];
+      if(vdb){
+        totalActivity*=vdb.activity;
+        found.push(vdb);
+      }
+    }
+  });
+  let phenotype='NM';
+  if(totalActivity===0)phenotype='PM';
+  else if(totalActivity<0.5)phenotype='IM';
+  else if(totalActivity>1.3)phenotype='URM';
+  return {phenotype,activities:found.map(v=>v.activity)};
+}
+
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+function animateCounter(el,target){
+  const step=Math.ceil(target/50);
+  let current=0;
+  const interval=setInterval(()=>{
+    current+=step;
+    if(current>=target){current=target;clearInterval(interval);}
+    el.textContent=current+'+';
+  },20);
+}
+
+async function startAnalysis(){
+  const overlay=document.getElementById('loadingOverlay');
+  overlay.style.display='flex';
+  await sleep(300);
+  try{
+    const variants=parseVCF(vcfContent);
+    const results=[];
+    for(const drug of selectedDrugs){
+      const risk=computeRisk(variants,drug);
+      const payload=new FormData();
+      payload.append('vcf_content',vcfContent);
+      payload.append('drug',drug);
+      payload.append('variants',JSON.stringify(variants));
+      payload.append('phenotype',risk.phenotype);
+      const res=await fetch('http://localhost:3000/api/analyze',{method:'POST',body:payload});
+      if(!res.ok)throw new Error('Server error');
+      let data=await res.json();
+      if(Array.isArray(data))data=data[0]||{};
+      data.patient_id=`PAT${patientCounter}`;
+      const now=new Date();
+      data.timestamp=now.toLocaleDateString()+' '+now.toLocaleTimeString();
+      results.push(data);
+    }
+    currentResults=results;
+    await sleep(500);
+    renderResults(results[0]);
+  }catch(e){
+    console.error(e);
+    alert('Analysis failed: '+e.message);
+  }
+  overlay.style.display='none';
+}
+
+function renderResults(out){
+  const sec=document.getElementById('resultsSection');
+  sec.style.display='block';
+  sec.scrollIntoView({behavior:'smooth'});
+  // Header
+  document.getElementById('r-patient-id').innerHTML=`<strong>Patient ID:</strong> ${out.patient_id}`;
+  document.getElementById('r-timestamp').innerHTML=`<strong>Analysis:</strong> ${out.timestamp}`;
+  // Risk Badge
+  const riskBadge=document.getElementById('riskBadge');
+  const riskKey=(out.risk_assessment||{}).recommended_action||'Unknown';
+  const riskData=RISK_CONFIG[riskKey]||RISK_CONFIG.Unknown;
+  riskBadge.innerHTML=`
+    <div style="font-size:1rem;">${riskData.icon}</div>
+    <div class="risk-category">${riskKey}</div>
+  `;
+  riskBadge.className='risk-badge rb-'+riskData.cls.toLowerCase();
+  const sevEl=document.getElementById('severityLevel');
+  const sev=riskData.severity;
+  sevEl.textContent=sev.charAt(0).toUpperCase()+sev.slice(1);
+  sevEl.className='severity-badge sev-'+sev;
+  // PGx Profile
+  document.getElementById('r-gene').textContent=out.pharmacogenomic_profile.primary_gene;
+  document.getElementById('r-diplotype').textContent=out.pharmacogenomic_profile.diplotype;
+  const phenoEl=document.getElementById('r-phenotype');
+  phenoEl.innerHTML=`<span class="phenotype-badge">${out.pharmacogenomic_profile.phenotype}</span> ${getPhenotypeLabel(out.pharmacogenomic_profile.phenotype)}`;
+  document.getElementById('r-variant-count').textContent=out.pharmacogenomic_profile.detected_variants.length;
+  // Variants table
+  const tbody=document.getElementById('r-variants-body');
+  if(out.pharmacogenomic_profile.detected_variants.length===0){
+    tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:1rem;">No variants detected in this gene</td></tr>';
+  } else {
+    tbody.innerHTML=out.pharmacogenomic_profile.detected_variants.map(v=>`
+      <tr>
+        <td class="rsid">${v.rsid}</td>
+        <td style="color:var(--blue);">${v.gene}</td>
+        <td class="star-allele">${v.star_allele}</td>
+        <td style="font-size:0.8rem;">${v.effect}</td>
+        <td style="color:var(--text-dim);">${v.zygosity}</td>
+      </tr>`).join('');
+  }
+  // Quality
+  const genesList=out.quality_metrics.genes_analyzed.join(', ')||'—';
+  document.getElementById('r-quality').innerHTML=`
+    <div class="qm-item"><div class="qm-dot qm-ok"></div>VCF Parse Success</div>
+    <div class="qm-item"><div class="qm-dot qm-ok"></div>${out.quality_metrics.variants_detected} Variants Detected</div>
+    <div class="qm-item"><div class="qm-dot qm-ok"></div>Genes: ${genesList}</div>
+    ${out.quality_metrics.confidence_factors.map(f=>`<div class="qm-item"><div class="qm-dot qm-ok"></div>${f.replace(/_/g,' ')}</div>`).join('')}
+  `;
+  // Recommendation
+  const cpicRec=(CPIC_RECOMMENDATIONS[out.drug]||{})[out.pharmacogenomic_profile.phenotype]||
+    {action:'See CPIC guidelines',dosing:'Consult healthcare provider',alternatives:[],urgency:'routine',cpic:'CPIC Guidelines'};
+  document.getElementById('r-rec-action').textContent=cpicRec.action;
+  document.getElementById('r-dosing').textContent=cpicRec.dosing;
+  const altsEl=document.getElementById('r-alternatives');
+  altsEl.innerHTML=cpicRec.alternatives.length>0
+    ?cpicRec.alternatives.map(a=>`<span class="alt-drug">${a}</span>`).join('')
+    :'<span style="color:var(--text-dim)">None specified</span>';
+  const urgEl=document.getElementById('r-urgency');
+  urgEl.textContent=cpicRec.urgency.charAt(0).toUpperCase()+cpicRec.urgency.slice(1);
+  urgEl.className='urgency-badge urg-'+cpicRec.urgency;
+  document.getElementById('r-cpic-ref').textContent='Reference: '+cpicRec.cpic;
+  // LLM Explanations with typewriter
+  const llm=(LLM_EXPLANATIONS[out.drug]||{})[out.pharmacogenomic_profile.phenotype]||
+    {summary:'Analysis complete',mechanism:'',risk_rationale:'',patient:''};
+  typewriterText('r-summary',llm.summary,15);
+  setTimeout(()=>typewriterText('r-mechanism',llm.mechanism,10),800);
+  setTimeout(()=>typewriterText('r-rationale',llm.risk_rationale,10),1600);
+  setTimeout(()=>typewriterText('r-patient',llm.patient,12),2400);
+  // JSON
+  renderJSON(out);
+}
+
+function getPhenotypeLabel(ph){
+  const map={PM:'Poor Metabolizer',IM:'Intermediate Metabolizer',NM:'Normal Metabolizer',RM:'Rapid Metabolizer',URM:'Ultra-Rapid Metabolizer',Unknown:'Unknown'};
+  return map[ph]||ph;
+}
+
+function typewriterText(id,text,speed){
+  const el=document.getElementById(id);
+  if(!el)return;
+  const str=String(text||'');
+  el.textContent='';el.classList.add('typewriter');
+  if(!str.length){el.classList.remove('typewriter');return;}
+  let i=0;
+  const interval=setInterval(()=>{
+    el.textContent+=str[i];i++;
+    if(i>=str.length){clearInterval(interval);el.classList.remove('typewriter');}
+  },speed);
+}
+
+function renderJSON(obj){
+  const viewer=document.getElementById('jsonViewer');
+  viewer.innerHTML=syntaxHighlight(JSON.stringify(obj,null,2));
+}
+
+function syntaxHighlight(json){
+  return json
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/("(\\u[0-9A-Fa-f]{4}|\\[^u]|[^"\\])*"(\s*:)?|-?\d+\.?\d*([eE][+\-]?\d+)?|true|false|null)/g,match=>{
+      if(/^"/.test(match)){
+        if(/:$/.test(match))return `<span class="json-key">${match}</span>`;
+        return `<span class="json-str">${match}</span>`;
+      }
+      if(/true|false/.test(match))return `<span class="json-bool">${match}</span>`;
+      if(/null/.test(match))return `<span class="json-null">${match}</span>`;
+      return `<span class="json-num">${match}</span>`;
+    });
+}
+
+function downloadJSON(){
+  if(currentResults.length===0) return;
+  const blob = new Blob([JSON.stringify(currentResults[0],null,2)],{type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const pid = currentResults[0].patient_id || 'patient';
+  const drug = (currentResults[0].drug || 'result').replace(/\s+/g,'_');
+  a.download = `${pid}_${drug}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function copyJSON(){
+  if(currentResults.length===0)return;
+  navigator.clipboard.writeText(JSON.stringify(currentResults[0],null,2)).then(()=>{
+    const t=document.getElementById('toast');
+    t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'),2500);
+  });
+}
+
+// ══════════════════════════════════════
+//  DOM INITIALIZATION
+// ══════════════════════════════════════
+document.addEventListener('DOMContentLoaded',function(){
+  const inputZone=document.getElementById('uploadZone');
+  const vcfInput=document.getElementById('vcfFileInput');
+  const analyzeBtn=document.getElementById('analyzeBtn');
+  const clearBtn=document.getElementById('clearBtn');
+  const resetBtn=document.getElementById('resetBtn');
+  const copyJSONBtn=document.getElementById('copyJsonBtn');
+  const downloadJSONBtn=document.getElementById('downloadJsonBtn');
+  
+  // File upload handlers
+  inputZone.addEventListener('click',()=>vcfInput.click());
+  inputZone.addEventListener('dragover',e=>{e.preventDefault();inputZone.classList.add('drag-over');});
+  inputZone.addEventListener('dragleave',()=>inputZone.classList.remove('drag-over'));
+  inputZone.addEventListener('drop',e=>{e.preventDefault();inputZone.classList.remove('drag-over');const f=e.dataTransfer.files[0];if(f)loadFile(f);});
+  vcfInput.addEventListener('change',e=>{const f=e.target.files[0];if(f)loadFile(f);});
+  
+  // Button handlers
+  if(analyzeBtn)analyzeBtn.addEventListener('click',startAnalysis);
+  if(clearBtn)clearBtn.addEventListener('click',()=>{
+    const res=document.getElementById('resultsSection')||document.getElementById('results');
+    if(res)res.style.display='none';
+    document.getElementById('fileInfo').style.display='none';
+    document.getElementById('uploadZone').classList.remove('file-loaded');
+    vcfContent='';vcfInput.value='';checkReady();
+  });
+  if(resetBtn)resetBtn.addEventListener('click',()=>{
+    selectedDrugs=[];
+    document.querySelectorAll('.drug-chip').forEach(c=>c.classList.remove('active'));
+    document.getElementById('drugInput').value='';
+    checkReady();
+  });
+  if(copyJSONBtn)copyJSONBtn.addEventListener('click',copyJSON);
+  if(downloadJSONBtn)downloadJSONBtn.addEventListener('click',downloadJSON);
+  
+  // Initial state
+  checkReady();
+  
+  // Intersection observer for stats counter animation
+  const obs=new IntersectionObserver(entries=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){
+        const t=parseInt(e.target.dataset.target);
+        if(t)animateCounter(e.target,t);
+        obs.unobserve(e.target);
+      }
+    });
+  });
+  document.querySelectorAll('[data-target]').forEach(el=>obs.observe(el));
+});
+
+// ══════════════════════════════════════
+//  VCF PARSING
+// ══════════════════════════════════════
+function parseVCF(content){
+  const lines=content.split('\n');
+  const variants=[];
+  let headers=null;
+  for(const line of lines){
+    const trimmed=line.trim();
+    if(!trimmed)continue;
+    if(trimmed.startsWith('##'))continue;
+    if(trimmed.startsWith('#CHROM')){
+      headers=trimmed.substring(1).split('\t').map(h=>h.trim());
+      continue;
+    }
+    const fields=trimmed.split('\t');
+    if(fields.length<8)continue;
+    const chrom=fields[0],pos=fields[1],id=fields[2],ref=fields[3],alt=fields[4],info=fields[7];
+    const infoMap={};
+    info.split(';').forEach(part=>{
+      const [k,v]=part.split('=');
+      if(v!==undefined)infoMap[k.trim()]=v.trim();
+    });
+    // rsID from ID field or INFO RS= field
+    const rsid=infoMap.RS||infoMap.rs||id||'';
+    const gene=infoMap.GENE||infoMap.gene||'';
+    const star=infoMap.STAR||infoMap.star||'';
+    if(rsid&&VARIANT_DB[rsid]){
+      const dbEntry=VARIANT_DB[rsid];
+      variants.push({
+        rsid,chrom,pos,ref,alt,
+        gene:gene||dbEntry.gene,
+        star_allele:star||dbEntry.star,
+        effect:dbEntry.effect,
+        zygosity:dbEntry.zygosity,
+        clinical_significance:dbEntry.significance,
+        phenotypeClass:dbEntry.phenotypeClass,
+        activity:dbEntry.activity
+      });
+    } else if(rsid||gene){
+      // Unknown variant — still report it
+      variants.push({
+        rsid:rsid||'unknown',chrom,pos,ref,alt,
+        gene:gene||'Unknown',
+        star_allele:star||'Unknown',
+        effect:'Unknown',
+        zygosity:'unknown',
+        clinical_significance:'Novel or uncharacterized variant',
+        phenotypeClass:'Unknown',
+        activity:null
+      });
+    }
+  }
+  return variants;
+}
+
+function computeRisk(variants,drug){
+  const drugInfo=DRUG_GENE_MAP[drug];
+  if(!drugInfo)return{risk:'Unknown',phenotype:'Unknown',confidence:0.5,gene:'Unknown',diplotype:'*1/*1',severity:'none'};
+  const {gene}=drugInfo;
+  const geneVariants=variants.filter(v=>v.gene===gene&&v.phenotypeClass!=='Unknown');
+  if(geneVariants.length===0){
+    return{risk:'Safe',phenotype:'NM',confidence:0.85,gene,diplotype:'*1/*1',severity:'none',variants:[]};
+  }
+  // Determine phenotype from activity scores
+  const activities=geneVariants.map(v=>v.activity).filter(a=>a!==null);
+  const totalActivity=activities.length>0?activities.reduce((a,b)=>a+b,0)/activities.length:1;
+  let phenotype='NM';
+  if(totalActivity===0)phenotype='PM';
+  else if(totalActivity<0.5)phenotype='PM';
+  else if(totalActivity<1.0)phenotype='IM';
+  else if(totalActivity===1.0)phenotype='NM';
+  else if(totalActivity<2.0)phenotype='RM';
+  else phenotype='URM';
+  // Diplotype
+  const stars=geneVariants.map(v=>v.star_allele).filter(s=>s&&s!=='Unknown');
+  const diplotype=stars.length>=2?stars[0]+'/'+stars[1]:stars.length===1?'*1/'+stars[0]:'*1/*1';
+  // Risk
+  const riskKey=phenotype+'Risk';
+  const risk=drugInfo[riskKey]||'Unknown';
+  const rc=RISK_CONFIG[risk]||RISK_CONFIG.Unknown;
+  return{risk,phenotype,confidence:rc.confidence,gene,diplotype,severity:rc.severity,variants:geneVariants};
+}
+
+// ══════════════════════════════════════
+//  MAIN ANALYSIS FUNCTION
+// ══════════════════════════════════════
+
+async function startAnalysis(){
+  if(!vcfContent||selectedDrugs.length===0)return;
+  const overlay=document.getElementById('loadingOverlay');
+  overlay.classList.add('active');
+  const steps=[1,2,3,4,5];
+  for(let i=0;i<steps.length;i++){
+    await sleep(500+Math.random()*300);
+    document.getElementById('ls'+steps[i]).classList.add('active');
+    if(i>0)document.getElementById('ls'+steps[i-1]).classList.remove('active');
+  }
+  await sleep(400);
+  overlay.classList.remove('active');
+  // Parse
+  const variants=parseVCF(vcfContent);
+  const drug=selectedDrugs[0]; // Show first drug (for simplicity)
+  const riskResult=computeRisk(variants,drug);
+  let riskLabel=riskResult.risk;
+  if(riskLabel==='Unknown'&&riskResult.phenotype){
+    const drugInfo=DRUG_GENE_MAP[drug];
+    if(drugInfo){
+      const ph=(riskResult.phenotype||'NM').toString();
+      const rk=ph.charAt(0).toLowerCase()+ph.slice(1)+'Risk';
+      riskLabel=drugInfo[rk]||'Safe';
+    }
+  }
+  const patientId='PATIENT_'+patientCounter;
+  const ts=new Date().toISOString();
+  // Build result JSON
+  const rc=RISK_CONFIG[riskLabel]||RISK_CONFIG.Unknown;
+  const cpicRec=CPIC_RECOMMENDATIONS[drug]&&CPIC_RECOMMENDATIONS[drug][riskResult.phenotype]
+    ?CPIC_RECOMMENDATIONS[drug][riskResult.phenotype]
+    :CPIC_RECOMMENDATIONS[drug]&&CPIC_RECOMMENDATIONS[drug].NM
+      ?CPIC_RECOMMENDATIONS[drug].NM
+      :{action:'Standard dosing',dosing:'No specific adjustment required.',alternatives:[],monitoring:false,urgency:'routine',cpic:'CPIC guidelines'};
+  const llm=LLM_EXPLANATIONS[drug]&&LLM_EXPLANATIONS[drug][riskResult.phenotype]
+    ?LLM_EXPLANATIONS[drug][riskResult.phenotype]
+    :LLM_EXPLANATIONS[drug]&&LLM_EXPLANATIONS[drug].NM
+      ?LLM_EXPLANATIONS[drug].NM
+      :{summary:'No specific pharmacogenomic risk identified.',mechanism:'Standard drug metabolism expected.',risk_rationale:'No high-risk variants detected for this drug.',patient:'Your genetic profile shows standard drug metabolism for this medication.'};
+  const detectedVars=riskResult.variants||variants.filter(v=>v.gene===riskResult.gene).slice(0,5);
+  const output={
+    patient_id:patientId,
+    drug,
+    timestamp:ts,
+    risk_assessment:{
+      risk_label:riskLabel,
+      confidence_score:riskResult.confidence,
+      severity:riskResult.severity
+    },
+    pharmacogenomic_profile:{
+      primary_gene:riskResult.gene,
+      diplotype:riskResult.diplotype,
+      phenotype:riskResult.phenotype,
+      detected_variants:detectedVars.map(v=>({
+        rsid:v.rsid,gene:v.gene,star_allele:v.star_allele,
+        effect:v.effect,zygosity:v.zygosity,
+        clinical_significance:v.clinical_significance
+      }))
+    },
+    clinical_recommendation:{
+      action:cpicRec.action,
+      dosing_guidance:cpicRec.dosing,
+      alternative_drugs:cpicRec.alternatives,
+      monitoring_required:cpicRec.monitoring,
+      urgency:cpicRec.urgency,
+      cpic_guideline_reference:cpicRec.cpic
+    },
+    llm_generated_explanation:{
+      summary:llm.summary,
+      mechanism:llm.mechanism,
+      risk_rationale:llm.risk_rationale,
+      patient_friendly_explanation:llm.patient
+    },
+    quality_metrics:{
+      vcf_parsing_success:true,
+      variants_detected:variants.length,
+      genes_analyzed:[...new Set(variants.map(v=>v.gene))],
+      confidence_factors:detectedVars.length>0?['known_variant','validated_rsid','cpic_evidence']:['no_variants_detected','standard_phenotype']
+    }
+  };
+  currentResults=[output];
+  renderResults(output,rc,cpicRec,llm,detectedVars);
+}
+
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+// ══════════════════════════════════════
+//  RENDER RESULTS
+// ══════════════════════════════════════
+function renderResults(out,rc,cpicRec,llm,detectedVars){
+  const resultsEl=document.getElementById('results');
+  resultsEl.classList.add('visible');
+  resultsEl.scrollIntoView({behavior:'smooth',block:'start'});
+  const ra=out.risk_assessment||{};
+  const pgx=out.pharmacogenomic_profile||{};
+  const qm=out.quality_metrics||{};
+  // Derive riskLabel - from output or compute from drug+phenotype if missing
+  let riskLabel=ra.risk_label||ra.risk||ra.recommended_action||'';
+  if(!riskLabel&&out.drug&&pgx.phenotype){
+    const drugInfo=DRUG_GENE_MAP[out.drug];
+    if(drugInfo){
+      const ph=(pgx.phenotype||'NM').toString();
+      const rk=ph.charAt(0).toLowerCase()+ph.slice(1)+'Risk';
+      riskLabel=drugInfo[rk]||'Safe';
+    }
+  }
+  riskLabel=riskLabel||'Unknown';
+  if(!rc)rc=RISK_CONFIG[riskLabel]||RISK_CONFIG.Unknown;
+  if(!cpicRec){
+    cpicRec=out.clinical_recommendation||
+      (CPIC_RECOMMENDATIONS[out.drug]||{})[pgx.phenotype]||
+      (CPIC_RECOMMENDATIONS[out.drug]||{}).NM||
+      {action:'See CPIC guidelines',dosing:'Consult healthcare provider',alternatives:[],urgency:'routine',cpic:'CPIC Guidelines'};
+  }
+  if(!llm){
+    llm=out.llm_generated_explanation||
+      (LLM_EXPLANATIONS[out.drug]||{})[pgx.phenotype]||
+      (LLM_EXPLANATIONS[out.drug]||{}).NM||
+      {summary:'No specific pharmacogenomic risk identified.',mechanism:'Standard drug metabolism expected.',risk_rationale:'No high-risk variants detected.',patient:'Your genetic profile shows standard drug metabolism for this medication.'};
+  }
+  const alts=Array.isArray(cpicRec.alternatives)?cpicRec.alternatives:(cpicRec.alternative_drugs||[]);
+  const urg=(cpicRec.urgency||'routine').toString();
+  // Header
+  document.getElementById('r-patient-id').textContent=out.patient_id||'—';
+  document.getElementById('r-timestamp').textContent=out.timestamp?new Date(out.timestamp).toLocaleString():'—';
+  document.getElementById('r-drug-label').textContent=out.drug||'—';
+  // Risk badge - ensure color classes apply (safe, toxic, adjust, ineffective, unknown)
+  const badge=document.getElementById('r-risk-badge');
+  const riskCls=(rc&&rc.cls)?rc.cls:(riskLabel==='Safe'?'safe':riskLabel==='Toxic'?'toxic':riskLabel==='Ineffective'?'ineffective':riskLabel==='Adjust Dosage'?'adjust':'unknown');
+  badge.className='risk-badge '+riskCls;
+  document.getElementById('r-risk-icon').textContent=(rc&&rc.icon)||'❓';
+  document.getElementById('r-risk-label').textContent=riskLabel;
+  // Confidence
+  const conf=ra.confidence_score!=null?ra.confidence_score:0.85;
+  document.getElementById('r-confidence').textContent=conf.toFixed(2);
+  document.getElementById('confidencePct').textContent=Math.round(conf*100)+'%';
+  setTimeout(()=>{
+    const circ=226*(1-Math.min(1,conf));
+    document.getElementById('confidenceFill').style.strokeDashoffset=circ;
+  },300);
+  // Severity badge - ensure color classes (sev-none, sev-low, sev-moderate, sev-high, sev-critical)
+  const sev=(ra.severity||'none').toString();
+  const sevEl=document.getElementById('r-severity');
+  const sevCls=['none','low','moderate','high','critical'].includes(sev)?sev:'none';
+  sevEl.textContent=sev.charAt(0).toUpperCase()+sev.slice(1);
+  sevEl.className='severity-badge sev-'+sevCls;
+  // PGx Profile
+  document.getElementById('r-gene').textContent=pgx.primary_gene||'—';
+  document.getElementById('r-diplotype').textContent=pgx.diplotype||'*1/*1';
+  const phenoEl=document.getElementById('r-phenotype');
+  phenoEl.innerHTML=`<span class="phenotype-badge">${pgx.phenotype||'Unknown'}</span> ${getPhenotypeLabel(pgx.phenotype)}`;
+  const vars=pgx.detected_variants||[];
+  document.getElementById('r-variant-count').textContent=vars.length;
+  // Variants table
+  const tbody=document.getElementById('r-variants-body');
+  if(vars.length===0){
+    tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:1rem;">No variants detected in this gene</td></tr>';
+  } else {
+    tbody.innerHTML=vars.map(v=>`
+      <tr>
+        <td class="rsid">${v.rsid||'—'}</td>
+        <td style="color:var(--blue);">${v.gene||'—'}</td>
+        <td class="star-allele">${v.star_allele||'—'}</td>
+        <td style="font-size:0.8rem;">${v.effect||'—'}</td>
+        <td style="color:var(--text-dim);">${v.zygosity||'—'}</td>
+      </tr>`).join('');
+  }
+  // Quality
+  const genesArr=qm.genes_analyzed||[];
+  const genesList=Array.isArray(genesArr)?genesArr.join(', '):'—';
+  const cfArr=qm.confidence_factors||[];
+  document.getElementById('r-quality').innerHTML=`
+    <div class="qm-item"><div class="qm-dot qm-ok"></div>VCF Parse Success</div>
+    <div class="qm-item"><div class="qm-dot qm-ok"></div>${qm.variants_detected!=null?qm.variants_detected:vars.length} Variants Detected</div>
+    <div class="qm-item"><div class="qm-dot qm-ok"></div>Genes: ${genesList||'—'}</div>
+    ${Array.isArray(cfArr)?cfArr.map(f=>`<div class="qm-item"><div class="qm-dot qm-ok"></div>${String(f).replace(/_/g,' ')}</div>`).join(''):''}
+  `;
+  // Clinical Recommendation
+  document.getElementById('r-rec-action').textContent=cpicRec.action||'—';
+  document.getElementById('r-dosing').textContent=cpicRec.dosing||cpicRec.dosing_guidance||'—';
+  const altsEl=document.getElementById('r-alternatives');
+  altsEl.innerHTML=alts.length>0
+    ?alts.map(a=>`<span class="alt-drug">${a}</span>`).join(' ')
+    :'<span style="color:var(--text-dim)">None specified</span>';
+  const urgEl=document.getElementById('r-urgency');
+  urgEl.textContent=urg.charAt(0).toUpperCase()+urg.slice(1);
+  urgEl.className='urgency-badge urg-'+(urg.includes('immediate')?'immediate':urg.includes('monitoring')?'monitoring':'routine');
+  document.getElementById('r-cpic-ref').textContent='Reference: '+(cpicRec.cpic||cpicRec.cpic_guideline_reference||'CPIC Guidelines');
+  // AI-Generated Clinical Explanation - direct display (no typewriter to avoid overlapping/garbled text)
+  const sumEl=document.getElementById('r-summary');
+  if(sumEl){sumEl.textContent=llm.summary||'No summary available.';sumEl.classList.remove('typewriter');}
+  const mechEl=document.getElementById('r-mechanism');
+  if(mechEl){mechEl.textContent=llm.mechanism||'No mechanism details available.';mechEl.classList.remove('typewriter');}
+  const ratEl=document.getElementById('r-rationale');
+  if(ratEl){ratEl.textContent=llm.risk_rationale||'No risk rationale available.';ratEl.classList.remove('typewriter');}
+  const patEl=document.getElementById('r-patient');
+  if(patEl){patEl.textContent=llm.patient||llm.patient_friendly_explanation||'No patient-friendly explanation available.';patEl.classList.remove('typewriter');}
+  // JSON
+  renderJSON(out);
+}
+
+function getPhenotypeLabel(ph){
+  const map={PM:'Poor Metabolizer',IM:'Intermediate Metabolizer',NM:'Normal Metabolizer',RM:'Rapid Metabolizer',URM:'Ultra-Rapid Metabolizer',Unknown:'Unknown'};
+  return map[ph]||ph;
+}
+
+function typewriterText(id,text,speed){
+  const el=document.getElementById(id);
+  if(!el)return;
+  const str=String(text||'');
+  el.textContent='';el.classList.add('typewriter');
+  if(!str.length){el.classList.remove('typewriter');return;}
+  let i=0;
+  const interval=setInterval(()=>{
+    el.textContent+=str[i];i++;
+    if(i>=str.length){clearInterval(interval);el.classList.remove('typewriter');}
+  },speed);
+}
+
+function renderJSON(obj){
+  const viewer=document.getElementById('jsonViewer');
+  viewer.innerHTML=syntaxHighlight(JSON.stringify(obj,null,2));
+}
+
+function syntaxHighlight(json){
+  return json
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/("(\\u[0-9A-Fa-f]{4}|\\[^u]|[^"\\])*"(\s*:)?|-?\d+\.?\d*([eE][+\-]?\d+)?|true|false|null)/g,match=>{
+      if(/^"/.test(match)){
+        if(/:$/.test(match))return `<span class="json-key">${match}</span>`;
+        return `<span class="json-str">${match}</span>`;
+      }
+      if(/true|false/.test(match))return `<span class="json-bool">${match}</span>`;
+      if(/null/.test(match))return `<span class="json-null">${match}</span>`;
+      return `<span class="json-num">${match}</span>`;
+    });
+}
+
+function downloadJSON(){
+  if(currentResults.length===0) return;
+  const blob = new Blob([JSON.stringify(currentResults[0],null,2)],{type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const pid = currentResults[0].patient_id || 'patient';
+  const drug = (currentResults[0].drug || 'result').replace(/\s+/g,'_');
+  a.download = `${pid}_${drug}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function downloadReportPDF(){
+  if(currentResults.length===0) return;
+  if(!window.jspdf){ alert('PDF library not loaded. Please refresh the page.'); return; }
+  const r=currentResults[0];
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF();
+  const pid=r.patient_id||'Unknown';
+  const drug=r.drug||'Unknown';
+  const ra=r.risk_assessment||{};
+  const pgx=r.pharmacogenomic_profile||{};
+  const rec=r.clinical_recommendation||{};
+  const llm=r.llm_generated_explanation||{};
+  const alts=Array.isArray(rec.alternative_drugs)?rec.alternative_drugs:(rec.alternatives||[]);
+  let y=20;
+  doc.setFontSize(18);
+  doc.text('PharmaGuard Pharmacogenomic Report',20,y);y+=12;
+  doc.setFontSize(10);
+  doc.text('Patient ID: '+pid,20,y);y+=6;
+  doc.text('Drug Analyzed: '+drug,20,y);y+=6;
+  doc.text('Report Date: '+(r.timestamp||new Date().toLocaleString()),20,y);y+=12;
+  doc.setFontSize(12);
+  doc.text('Risk Assessment',20,y);y+=6;
+  doc.setFontSize(10);
+  doc.text('Risk Level: '+(ra.risk_label||'Unknown'),20,y);y+=5;
+  doc.text('Severity: '+((ra.severity||'none').charAt(0).toUpperCase()+(ra.severity||'').slice(1)),20,y);y+=5;
+  doc.text('Confidence: '+(((ra.confidence_score||0)*100).toFixed(0))+'%',20,y);y+=10;
+  doc.setFontSize(12);
+  doc.text('Pharmacogenomic Profile',20,y);y+=6;
+  doc.setFontSize(10);
+  doc.text('Primary Gene: '+(pgx.primary_gene||'-'),20,y);y+=5;
+  doc.text('Diplotype: '+(pgx.diplotype||'*1/*1'),20,y);y+=5;
+  doc.text('Phenotype: '+(pgx.phenotype||'Unknown')+' ('+getPhenotypeLabel(pgx.phenotype)+')',20,y);y+=8;
+  const vars=pgx.detected_variants||[];
+  if(vars.length>0){
+    doc.text('Detected Variants:',20,y);y+=5;
+    vars.slice(0,10).forEach(function(v){ doc.text('  - '+(v.rsid||'-')+' | '+(v.gene||'-')+' | '+(v.star_allele||'-')+' | '+(v.effect||'-'),20,y);y+=5; });
+    y+=5;
+  }
+  doc.setFontSize(12);
+  doc.text('Clinical Recommendation',20,y);y+=6;
+  doc.setFontSize(10);
+  doc.text('Action: '+(rec.action||'-'),20,y);y+=6;
+  const dosingStr=(rec.dosing_guidance||rec.dosing||'-').substring(0,170);
+  doc.text('Dosing: '+dosingStr+(dosingStr.length>=170?'...':''),20,y);y+=8;
+  if(alts.length>0){ doc.text('Alternatives: '+alts.join(', '),20,y);y+=6; }
+  doc.text('Urgency: '+((rec.urgency||'routine').charAt(0).toUpperCase()+(rec.urgency||'').slice(1)),20,y);y+=10;
+  doc.setFontSize(12);
+  doc.text('AI Clinical Explanation',20,y);y+=6;
+  doc.setFontSize(10);
+  const summary=(llm.summary||'').substring(0,500);
+  if(summary){ var lines=doc.splitTextToSize(summary,170); doc.text(lines,20,y);y+=lines.length*5+4; }
+  const patient=(llm.patient_friendly_explanation||llm.patient||'').substring(0,400);
+  if(patient){ doc.text('Patient-friendly:',20,y);y+=5; var plines=doc.splitTextToSize(patient,170); doc.text(plines,20,y);y+=plines.length*5+6; }
+  doc.setFontSize(8);
+  doc.text('- Report generated by PharmaGuard. For educational use only. Consult a healthcare provider.',20,doc.internal.pageSize.height-10);
+  doc.save(pid+'_'+drug.replace(/\s+/g,'_')+'_report.pdf');
+}
+
+function copyJSON(){
+  if(currentResults.length===0)return;
+  navigator.clipboard.writeText(JSON.stringify(currentResults[0],null,2)).then(()=>{
+    const t=document.getElementById('toast');
+    t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'),2500);
+  });
+}
+
+</script>
+</body>
+</html>
