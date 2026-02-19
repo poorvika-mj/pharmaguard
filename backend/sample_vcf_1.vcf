@@ -1,0 +1,14 @@
+##fileformat=VCFv4.2
+##fileDate=20240219
+##source=PharmaGuard_SampleVCF_v1
+##reference=GRCh37
+##phasing=none
+##INFO=<ID=GENE,Number=1,Type=String,Description="Gene symbol">
+##INFO=<ID=STAR,Number=1,Type=String,Description="Star allele">
+##INFO=<ID=RS,Number=1,Type=String,Description="dbSNP rsID">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO
+chr22	42522613	rs3892097	C	T	60	PASS	GENE=CYP2D6;STAR=*4;RS=rs3892097
+chr10	96521657	rs1799853	C	T	60	PASS	GENE=CYP2C9;STAR=*2;RS=rs1799853
+chr10	96702047	rs1057910	A	C	60	PASS	GENE=CYP2C9;STAR=*3;RS=rs1057910
+chr6	18157629	rs4244285	G	A	60	PASS	GENE=CYP2C19;STAR=*2;RS=rs4244285
+chr12	21331549	rs4149056	T	C	60	PASS	GENE=SLCO1B1;STAR=*5;RS=rs4149056
